@@ -75,8 +75,8 @@ function listenToActiveListProducts() {
             snapshot.forEach(doc => {
                 updatedProducts.push(doc.data());
             });
-            // Ordenar ascendente por fecha de creación para preservar el orden original
-            updatedProducts.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+            // Ordenar descendente por fecha de creación para mostrar los más nuevos primero
+            updatedProducts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             
             products = updatedProducts;
             
@@ -1078,7 +1078,6 @@ function createProductCard(p, i) {
     const card = document.createElement('article');
     card.className = 'product-card';
     card.dataset.id = p.id;
-    card.style.animationDelay = `${i * 0.04}s`;
     card.setAttribute('tabindex', '0');
     card.setAttribute('aria-label', `Producto: ${escHtml(p.name)}, $${p.price}`);
 
