@@ -659,8 +659,8 @@ kbd.kbd-hint {
 /* ── LISTA VERTICAL DE PRODUCTOS (GRID DE CUADRÍCULA POR DEFECTO) ── */
 .products-column-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(2, 1fr); /* 2 columnas de grilla por defecto */
+    gap: 12px;
     min-height: 150px;
 }
 
@@ -698,7 +698,7 @@ kbd.kbd-hint {
 /* Imagen de la tarjeta (superior, grande e íntegra con object-fit cover) */
 .card-image {
     width: 100%;
-    height: 240px;
+    height: 170px; /* Altura de imagen proporcionada y estética para 2 columnas */
     flex-shrink: 0;
     background: #08080f;
     position: relative;
@@ -2338,13 +2338,24 @@ kbd.kbd-hint {
         gap: 10px !important;
     }
     .card-image {
-        height: 180px !important; /* Tamaño de imagen adaptado */
+        height: 160px !important; /* Tamaño de imagen compacto y estético para móviles */
     }
     .card-info {
         padding: 10px !important;
     }
     .card-price {
         font-size: 1.1rem !important;
+    }
+}
+
+/* Adaptación responsive para pantallas grandes y PC (Global) */
+@media (min-width: 1024px) {
+    .products-column-list {
+        grid-template-columns: repeat(3, 1fr) !important; /* 3 columnas fijas en PC */
+        gap: 16px !important;
+    }
+    .card-image {
+        height: 190px !important; /* Proporción ideal y balanceada para 3 columnas en pantallas grandes */
     }
 }
 
