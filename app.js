@@ -432,6 +432,7 @@ const imagePreviewModal = document.getElementById('image-preview-modal');
 const imagePreviewImg = document.getElementById('image-preview-img');
 const imagePreviewTitle = document.getElementById('image-preview-title');
 const imagePreviewPrice = document.getElementById('image-preview-price');
+const imagePreviewTime = document.getElementById('image-preview-time');
 const btnCloseImagePreview = document.getElementById('btn-close-image-preview');
 
 // ── AUTENTICACIÓN Y CONTROL DE ROLES (Google Sign-In) ─────────
@@ -1240,6 +1241,17 @@ function openImagePreview(p) {
     imagePreviewImg.src = p.image;
     imagePreviewTitle.textContent = p.name;
     imagePreviewPrice.textContent = `$${p.price}`;
+    
+    // Obtener la hora aproximada de subasta (12 horas AM/PM) sin fecha
+    let timeStr = '--:--';
+    if (p.createdAt) {
+        const d = new Date(p.createdAt);
+        timeStr = d.toLocaleTimeString('es-ES', { hour: 'numeric', minute: '2-digit', hour12: true });
+        timeStr = timeStr.replace(/a\.\s*m\./i, 'AM').replace(/p\.\s*m\./i, 'PM').replace(/am/i, 'AM').replace(/pm/i, 'PM');
+    }
+    if (imagePreviewTime) {
+        imagePreviewTime.innerHTML = `<i data-lucide="clock" style="width: 12px; height: 12px; flex-shrink:0;"></i> Subido a las ${timeStr}`;
+    }
     
     imagePreviewModal.style.display = 'flex';
     document.body.style.overflow = 'hidden';

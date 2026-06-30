@@ -2455,4 +2455,19 @@ kbd.kbd-hint {
     text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
+.image-preview-time {
+    font-size: 0.8rem;
+    color: var(--text-3);
+    margin-top: 4px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 3px 10px;
+    border-radius: 99px;
+}
+
 
