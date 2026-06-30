@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Gestión rápida de subastas en grupos de WhatsApp.">
+    <title>Bonito Bazar — Control de Subastas WhatsApp</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+</head>
+<body>
+
+    <!-- Overlay global de arrastre -->
+    <div id="drag-overlay" class="drag-overlay" aria-hidden="true">
+        <div class="drag-overlay-inner">
+            <div class="drag-overlay-icon"><i data-lucide="image-plus"></i></div>
+            <p class="drag-overlay-title">Suelta la imagen aquí</p>
+            <p class="drag-overlay-sub">Se añadirá al formulario automáticamente</p>
+        </div>
+    </div>
+
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+
+    <div class="app-shell">
+
+        <!-- ── HEADER ── -->
+        <header class="app-header">
+            <div class="brand">
+                <div class="brand-icon"><i data-lucide="gavel"></i></div>
+                <div>
+                    <div class="brand-title-row">
+                        <span class="brand-name">Bonito Bazar</span>
+                        <span id="total-count" class="brand-badge-count">0</span>
+                    </div>
+                    <span class="brand-tagline">Subastas de WhatsApp</span>
+                </div>
+            </div>
+
+            <!-- Barra de búsqueda y selector de listas (Integrado en el Header) -->
+            <div class="list-toolbar">
+                <div class="list-selector-container">
+                    <button id="btn-list-select" class="btn-list-select" title="Seleccionar Lista" aria-haspopup="listbox" aria-expanded="false">
+                        <i data-lucide="list"></i>
+                        <span id="active-list-name">Cargando lista...</span>
+                        <i data-lucide="chevron-down" class="chevron-ico"></i>
+                    </button>
+                    <!-- Dropdown de listas -->
+                    <div id="list-dropdown" class="list-dropdown" style="display: none;">
+                        <div class="dropdown-header">Mis Listas</div>
+                        <div id="list-options" class="list-options" role="listbox">
+                            <!-- Opciones cargadas dinámicamente -->
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-actions">
+                            <button type="button" id="btn-create-list" class="btn-drop-action">
+                                <i data-lucide="plus"></i> Nueva lista
+                            </button>
+                            <button type="button" id="btn-rename-list" class="btn-drop-action">
+                                <i data-lucide="edit-3"></i> Renombrar actual
+                            </button>
+                            <button type="button" id="btn-delete-list" class="btn-drop-action danger">
+                                <i data-lucide="trash-2"></i> Eliminar actual
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="search-wrap">
+                    <i data-lucide="search" class="search-ico"></i>
+                    <input type="text" id="search-input" placeholder="Buscar en la lista..." aria-label="Buscar productos">
+                </div>
+                <button id="btn-sort-modified" class="btn-icon" title="Ordenar por últimos modificados" aria-label="Ordenar por últimos modificados">
+                    <i data-lucide="history"></i>
+                </button>
+            </div>
+
+            <div class="header-actions">
+                <button id="btn-toggle-form" class="btn-add-trigger" aria-expanded="false">
+                    <i data-lucide="plus"></i>
+                    <span>Agregar producto</span>
+                </button>
+                <button id="btn-show-summary" class="btn-icon" title="Cuentas por Compradora" aria-label="Cuentas por Compradora">
+                    <i data-lucide="receipt"></i>
+                </button>
+                <div class="tools-selector-container">
+                    <button id="btn-tools-select" class="btn-icon" title="Herramientas y Respaldo" aria-haspopup="true" aria-expanded="false">
+                        <i data-lucide="settings"></i>
+                    </button>
+                    <!-- Dropdown de herramientas -->
+                    <div id="tools-dropdown" class="list-dropdown tools-dropdown" style="display: none;">
+                        <div class="dropdown-header">Herramientas</div>
+                        <div class="dropdown-actions">
+                            <button type="button" id="btn-copy-closing-msg" class="btn-drop-action">
+                                <i data-lucide="clock"></i> Copiar texto de cierre
+                            </button>
+                            <div class="dropdown-divider"></div>
+                            <button type="button" id="btn-export-backup" class="btn-drop-action">
+                                <i data-lucide="download"></i> Exportar datos (.json)
+                            </button>
+                            <button type="button" id="btn-import-backup" class="btn-drop-action">
+                                <i data-lucide="upload"></i> Importar datos (.json)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <input type="file" id="backup-file-input" accept=".json" style="display: none;">
+                <button id="theme-toggle" class="btn-icon" title="Cambiar tema" aria-label="Cambiar tema">
+                    <i data-lucide="sun" class="icon-sun"></i>
+                    <i data-lucide="moon" class="icon-moon"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- ── PANEL COLAPSABLE DEL FORMULARIO ── -->
+        <div id="form-panel" class="form-panel" aria-hidden="true">
+            <div class="form-panel-inner">
+                <!-- Tip de WhatsApp -->
+                <div class="tip-card">
+                    <div class="tip-icon"><i data-lucide="zap"></i></div>
+                    <div class="tip-text">
+                        <strong>Flujo rápido:</strong> Arrastra una foto desde WhatsApp Web a <em>cualquier parte</em> de la pantalla. También copia la imagen y pega con <kbd>Ctrl+V</kbd>. Luego escribe el nombre, el precio y presiona <kbd>Enter</kbd>.
+                    </div>
+                </div>
+
+                <form id="add-form" class="add-form" autocomplete="off" novalidate>
+                    <div class="add-form-layout">
+
+                        <!-- Zona de imagen -->
+                        <div class="form-image-side">
+                            <div id="form-image-preview" class="form-image-preview" style="display:none;">
+                                <img id="form-preview-img" src="" alt="Vista previa">
+                                <button type="button" id="btn-clear-image" class="btn-clear-image" aria-label="Quitar imagen">
+                                    <i data-lucide="x"></i>
+                                </button>
+                            </div>
+                            <div id="mini-dropzone" class="mini-dropzone">
+                                <input type="file" id="file-input" accept="image/*" style="display:none">
+                                <i data-lucide="image-plus" class="mini-dz-icon"></i>
+                                <span>Arrastra aquí o <button type="button" id="btn-browse" class="link-btn">elige un archivo</button></span>
+                                <span class="mini-dz-hint">También <strong>Ctrl+V</strong> para pegar</span>
+                            </div>
+                        </div>
+
+                        <!-- Campos -->
+                        <div class="form-fields-side">
+                            <div class="field-group">
+                                <label for="input-name">Nombre del producto</label>
+                                <input type="text" id="input-name" placeholder="Ej. Bolsa de piel rosa" required tabindex="1">
+                            </div>
+                            <div class="field-group">
+                                <label for="input-price">Precio base ($)</label>
+                                <input type="number" id="input-price" placeholder="0.00" step="0.01" min="0" required tabindex="2">
+                            </div>
+                            <div class="form-submit-row">
+                                <button type="submit" id="btn-add" class="btn-add" tabindex="3">
+                                    <i data-lucide="plus-circle"></i>
+                                    <span>Guardar</span>
+                                    <kbd class="kbd-hint">Enter</kbd>
+                                </button>
+                                <button type="button" id="btn-cancel-form" class="btn-cancel-form" tabindex="4">
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ── CONTENIDO PRINCIPAL ── -->
+        <main class="app-main">
+
+            <!-- Contenedor de dos columnas -->
+            <div id="lists-columns" class="lists-columns-container" style="display: none;">
+                <!-- Columna 1: Disponibles -->
+                <section class="list-column" aria-labelledby="col-avail-title">
+                    <div class="column-header">
+                        <div class="column-title-wrapper">
+                            <span class="column-dot dot-available"></span>
+                            <h2 id="col-avail-title">Disponibles</h2>
+                        </div>
+                        <div class="column-meta">
+                            <span id="total-price-available" class="column-total-price" title="Suma total de valor disponible">$0.00</span>
+                            <span id="count-available" class="column-badge">0</span>
+                        </div>
+                    </div>
+                    <div id="products-available" class="products-column-list"></div>
+                </section>
+
+                <!-- Columna 2: Adjudicados -->
+                <section class="list-column" aria-labelledby="col-sold-title">
+                    <div class="column-header">
+                        <div class="column-title-wrapper">
+                            <span class="column-dot dot-sold"></span>
+                            <h2 id="col-sold-title">Adjudicados</h2>
+                            <button id="btn-sort-sold" class="btn-column-action" title="Ordenar por compradora" aria-label="Ordenar por compradora">
+                                <i data-lucide="arrow-up-down"></i>
+                            </button>
+                        </div>
+                        <div class="column-meta">
+                            <span id="total-price-sold" class="column-total-price" title="Suma total vendida">$0.00</span>
+                            <span id="count-sold" class="column-badge">0</span>
+                        </div>
+                    </div>
+                    <div id="products-sold" class="products-column-list"></div>
+                </section>
+            </div>
+
+            <!-- Estado vacío -->
+            <div id="empty-state" class="empty-state">
+                <div class="empty-illustration"><i data-lucide="shopping-bag"></i></div>
+                <h2>Lista vacía</h2>
+                <p>Arrastra una imagen desde WhatsApp Web o haz clic en <strong>"Agregar producto"</strong> para empezar.</p>
+            </div>
+
+            <!-- Sin resultados -->
+            <div id="no-results" class="empty-state" style="display:none;">
+                <div class="empty-illustration"><i data-lucide="search-x"></i></div>
+                <h2>Sin coincidencias</h2>
+                <p>No hay productos que coincidan con tu búsqueda.</p>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- ── MODAL DE EDICIÓN ── -->
+    <div id="edit-modal" class="modal-backdrop" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2 id="edit-modal-title">Editar Producto</h2>
+                <button id="btn-close-modal" class="btn-modal-close" aria-label="Cerrar">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+
+            <form id="edit-form" class="edit-form" autocomplete="off" novalidate>
+                <input type="hidden" id="edit-id">
+
+                <div class="edit-modal-grid">
+                    <!-- Columna Izquierda: Imagen y de Historial -->
+                    <div class="edit-modal-left">
+                        <!-- Imagen -->
+                        <div class="edit-image-section">
+                            <div id="edit-image-container" class="edit-image-container">
+                                <img id="edit-preview-img" src="" alt="Imagen del producto">
+                                <div class="edit-image-overlay">
+                                    <button type="button" id="btn-edit-delete-image" class="btn-overlay-action">
+                                        <i data-lucide="trash-2"></i> Quitar imagen
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="edit-no-image" class="edit-no-image" style="display:none;">
+                                <i data-lucide="image-off"></i>
+                                <span>Sin imagen</span>
+                                <button type="button" id="btn-edit-add-image" class="link-btn">Agregar imagen</button>
+                                <input type="file" id="edit-file-input" accept="image/*" style="display:none;">
+                            </div>
+                        </div>
+
+                        <!-- Historial de precios -->
+                        <div class="price-history-section" id="price-history-section">
+                            <div class="ph-header">
+                                <i data-lucide="history"></i>
+                                <span>Historial de precios</span>
+                            </div>
+                            <div id="price-history-list" class="price-history-list"></div>
+                        </div>
+                    </div>
+
+                    <!-- Columna Derecha: Formulario y Acciones -->
+                    <div class="edit-modal-right">
+                        <div class="edit-fields">
+                            <div class="field-group">
+                                <label for="edit-name">Nombre del producto</label>
+                                <input type="text" id="edit-name" placeholder="Nombre del producto" required>
+                            </div>
+                            <div class="field-group">
+                                <label for="edit-price">Precio ($)</label>
+                                <input type="number" id="edit-price" placeholder="0.00" step="0.01" min="0" required>
+                            </div>
+                            <div class="field-group compradora-group">
+                                <label for="edit-compradora">
+                                    <i data-lucide="user-check" class="label-icon"></i>
+                                    Compradora
+                                </label>
+                                <input type="text" id="edit-compradora" placeholder="Nombre o número de teléfono...">
+                                <span class="field-hint">Deja vacío si aún no tiene compradora</span>
+                            </div>
+                        </div>
+
+                        <div class="edit-actions">
+                            <button type="button" id="btn-delete-product" class="btn-delete-product">
+                                <i data-lucide="trash-2"></i>
+                                Eliminar
+                            </button>
+                            <button type="submit" class="btn-save-edit">
+                                <i data-lucide="check"></i>
+                                Guardar
+                                <kbd class="kbd-hint">Enter</kbd>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ── VISTA DE RESUMEN DE COMPRADORAS (PANTALLA COMPLETA) ── -->
+    <div id="summary-view" class="summary-view-backdrop" style="display:none;">
+        <div class="summary-view-container">
+            <header class="summary-view-header">
+                <div class="summary-title-section">
+                    <i data-lucide="receipt" class="header-icon"></i>
+                    <div>
+                        <h1>Cuentas de Compradoras</h1>
+                        <p>Resumen de productos adjudicados y totales</p>
+                    </div>
+                </div>
+                <!-- Buscador de cuentas -->
+                <div class="summary-search-wrap search-wrap" style="flex: 1; max-width: 320px; margin: 0 16px;">
+                    <i data-lucide="search" class="search-ico"></i>
+                    <input type="text" id="summary-search-input" placeholder="Buscar compradora o prenda..." aria-label="Buscar cuentas">
+                </div>
+                <div class="summary-header-actions" style="display: flex; align-items: center; gap: 8px;">
+                    <button id="btn-sort-buyers" class="btn-icon" title="Ordenar cuentas" aria-label="Ordenar cuentas">
+                        <i data-lucide="arrow-up-down"></i>
+                    </button>
+                    <button id="btn-close-summary" class="btn-modal-close" aria-label="Cerrar vista de resumen">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Métricas globales -->
+            <div class="summary-stats-grid">
+                <div class="summary-stat-card">
+                    <span id="stat-total-sold-money" class="stat-value">$0.00</span>
+                    <span class="stat-label">Total Recaudado</span>
+                </div>
+                <div class="summary-stat-card">
+                    <span id="stat-unique-buyers" class="stat-value">0</span>
+                    <span class="stat-label">Compradoras Distintas</span>
+                </div>
+                <div class="summary-stat-card">
+                    <span id="stat-total-sold-qty" class="stat-value">0</span>
+                    <span class="stat-label">Productos Adjudicados</span>
+                </div>
+            </div>
+
+            <!-- Listado de compradoras -->
+            <div id="summary-buyers-list" class="summary-buyers-list">
+                <!-- Se renderiza dinámicamente -->
+            </div>
+
+            <!-- Vista vacía si no hay productos vendidos -->
+            <div id="summary-empty-state" class="empty-state" style="display:none;">
+                <div class="empty-illustration"><i data-lucide="user-check"></i></div>
+                <h2>Sin ventas adjudicadas</h2>
+                <p>Asigna una <strong>Compradora</strong> a tus productos en el listado para ver sus cuentas aquí.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── MODAL DE DIÁLOGO DE TEXTO (Crear/Renombrar) ── -->
+    <div id="prompt-modal" class="modal-backdrop" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="prompt-modal-title">
+        <div class="modal-card prompt-card" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2 id="prompt-modal-title">Nueva Lista</h2>
+                <button id="btn-close-prompt" class="btn-modal-close" aria-label="Cerrar">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="prompt-form" autocomplete="off" novalidate>
+                <div style="padding: 20px 22px;">
+                    <div class="field-group">
+                        <label id="prompt-label" for="prompt-input">Nombre de la lista</label>
+                        <input type="text" id="prompt-input" required placeholder="Ej. Subasta del martes">
+                    </div>
+                </div>
+                <div class="edit-actions" style="border-top: 1px solid var(--border); padding: 16px 22px; gap: 8px;">
+                    <button type="button" id="btn-cancel-prompt" class="btn-cancel-form" style="flex: 1;">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="btn-submit-prompt" class="btn-save-edit" style="flex: 1; margin: 0; justify-content: center; width: auto;">
+                        <i data-lucide="check"></i>
+                        <span id="prompt-submit-text">Confirmar</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <button id="btn-scroll-toggle" class="btn-scroll-toggle" title="Ir al final" aria-label="Ir al final">
+        <i data-lucide="arrow-down"></i>
+    </button>
+
+    <div id="toast" class="toast" aria-live="polite"></div>
+    <script src="app.js"></script>
+</body>
+</html>

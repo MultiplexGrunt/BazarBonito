@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TestSuite — Pruebas Automatizadas SubastaLista</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Outfit:wght@700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg: #0b0d1a;
+            --bg-card: rgba(22, 24, 50, 0.85);
+            --border: rgba(255,255,255,0.08);
+            --text-1: #eef0ff;
+            --text-2: #8b91b8;
+            --accent: #7c3aed;
+            --accent-glow: rgba(124,58,237,0.35);
+            --green: #34d399;
+            --green-bg: rgba(52,211,153,0.12);
+            --red: #f87171;
+            --red-bg: rgba(248,113,113,0.1);
+            --radius: 12px;
+            --radius-lg: 18px;
+            --font: 'Inter', system-ui, sans-serif;
+            --font-display: 'Outfit', system-ui, sans-serif;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text-1);
+            margin: 0;
+            padding: 40px 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+        }
+
+        .test-container {
+            max-width: 600px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            margin: 0;
+            background: linear-gradient(90deg, #c4b5fd, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn-run {
+            background: linear-gradient(135deg, var(--accent), #4f46e5);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            padding: 10px 20px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: var(--font);
+            transition: all 0.2s;
+            box-shadow: 0 4px 14px var(--accent-glow);
+        }
+
+        .btn-run:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px var(--accent-glow);
+        }
+
+        .summary-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            backdrop-filter: blur(12px);
+        }
+
+        .stat-val {
+            font-size: 2rem;
+            font-weight: 800;
+            font-family: var(--font-display);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-2);
+            margin-top: 4px;
+        }
+
+        .passed-color { color: var(--green); }
+        .failed-color { color: var(--red); }
+
+        .test-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .test-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.2s;
+        }
+
+        .test-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .test-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .test-desc {
+            font-size: 0.8rem;
+            color: var(--text-2);
+        }
+
+        .test-status {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 4px 10px;
+            border-radius: 99px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .status-pending { background: rgba(255,255,255,0.05); color: var(--text-2); }
+        .status-passed { background: var(--green-bg); color: var(--green); }
+        .status-failed { background: var(--red-bg); color: var(--red); }
+
+        .back-link {
+            font-size: 0.85rem;
+            color: var(--text-2);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: color 0.2s;
+        }
+        .back-link:hover {
+            color: var(--text-1);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <a href="index.html" class="back-link"><i data-lucide="arrow-left"></i> Volver a la Aplicación</a>
+        <header>
+            <div>
+                <h1>Suite de Pruebas Automatizadas</h1>
+                <p style="margin: 4px 0 0; font-size: 0.8rem; color: var(--text-2);">Validación de motor de base de datos IndexedDB</p>
+            </div>
+            <button id="btn-run" class="btn-run">Ejecutar Pruebas</button>
+        </header>
+
+        <div class="summary-card">
+            <div>
+                <div id="stat-total" class="stat-val">5</div>
+                <div class="stat-label">Total Pruebas</div>
+            </div>
+            <div>
+                <div id="stat-passed" class="stat-val passed-color">0</div>
+                <div class="stat-label">Pasadas</div>
+            </div>
+            <div>
+                <div id="stat-failed" class="stat-val failed-color">0</div>
+                <div class="stat-label">Fallidas</div>
+            </div>
+        </div>
+
+        <div class="test-list">
+            <!-- Prueba 1 -->
+            <div class="test-item" id="test-1">
+                <div class="test-info">
+                    <span class="test-name">1. Conexión de Base de Datos</span>
+                    <span class="test-desc">Verifica la apertura y creación de la BD SubastaDB (v1)</span>
+                </div>
+                <span class="test-status status-pending">Pendiente</span>
+            </div>
+
+            <!-- Prueba 2 -->
+            <div class="test-item" id="test-2">
+                <div class="test-info">
+                    <span class="test-name">2. Escritura y Lectura de Listas</span>
+                    <span class="test-desc">Guarda una lista de prueba y verifica su existencia</span>
+                </div>
+                <span class="test-status status-pending">Pendiente</span>
+            </div>
+
+            <!-- Prueba 3 -->
+            <div class="test-item" id="test-3">
+                <div class="test-info">
+                    <span class="test-name">3. Modificación de Listas</span>
+                    <span class="test-desc">Actualiza el contenido de una lista y valida la persistencia</span>
+                </div>
+                <span class="test-status status-pending">Pendiente</span>
+            </div>
+
+            <!-- Prueba 4 -->
+            <div class="test-item" id="test-4">
+                <div class="test-info">
+                    <span class="test-name">4. Persistencia de Configuración Global</span>
+                    <span class="test-desc">Guarda el activeListId en config y lo recupera</span>
+                </div>
+                <span class="test-status status-pending">Pendiente</span>
+            </div>
+
+            <!-- Prueba 5 -->
+            <div class="test-item" id="test-5">
+                <div class="test-info">
+                    <span class="test-name">5. Eliminación de Listas</span>
+                    <span class="test-desc">Elimina una lista de la base de datos de forma limpia</span>
+                </div>
+                <span class="test-status status-pending">Pendiente</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Clonamos el objeto db de app.js para probarlo aisladamente
+        const db = {
+            dbName: 'SubastaDB_Test', // Usamos una base de datos de test separada para no alterar la real del usuario
+            dbVersion: 1,
+            instance: null,
+
+            open() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, this.dbVersion);
+
+                    request.onupgradeneeded = (e) => {
+                        const database = e.target.result;
+                        if (!database.objectStoreNames.contains('listas')) {
+                            database.createObjectStore('listas', { keyPath: 'id' });
+                        }
+                        if (!database.objectStoreNames.contains('config')) {
+                            database.createObjectStore('config', { keyPath: 'key' });
+                        }
+                    };
+
+                    request.onsuccess = (e) => {
+                        this.instance = e.target.result;
+                        resolve(this.instance);
+                    };
+
+                    request.onerror = (e) => {
+                        reject(new Error('No se pudo abrir la base de datos: ' + e.target.error));
+                    };
+                });
+            },
+
+            getLists() {
+                return new Promise((resolve, reject) => {
+                    const tx = this.instance.transaction('listas', 'readonly');
+                    const store = tx.objectStore('listas');
+                    const request = store.getAll();
+                    request.onsuccess = () => resolve(request.result || []);
+                    request.onerror = () => reject(request.error);
+                });
+            },
+
+            saveList(lista) {
+                return new Promise((resolve, reject) => {
+                    const tx = this.instance.transaction('listas', 'readwrite');
+                    const store = tx.objectStore('listas');
+                    const request = store.put(lista);
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            },
+
+            deleteList(id) {
+                return new Promise((resolve, reject) => {
+                    const tx = this.instance.transaction('listas', 'readwrite');
+                    const store = tx.objectStore('listas');
+                    const request = store.delete(id);
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            },
+
+            getConfig(key) {
+                return new Promise((resolve, reject) => {
+                    const tx = this.instance.transaction('config', 'readonly');
+                    const store = tx.objectStore('config');
+                    const request = store.get(key);
+                    request.onsuccess = () => resolve(request.result ? request.result.value : null);
+                    request.onerror = () => reject(request.error);
+                });
+            },
+
+            saveConfig(key, value) {
+                return new Promise((resolve, reject) => {
+                    const tx = this.instance.transaction('config', 'readwrite');
+                    const store = tx.objectStore('config');
+                    const request = store.put({ key, value });
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            },
+
+            // Limpieza total para pruebas
+            clearAll() {
+                return new Promise((resolve, reject) => {
+                    const tx = this.instance.transaction(['listas', 'config'], 'readwrite');
+                    tx.objectStore('listas').clear();
+                    tx.objectStore('config').clear();
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = () => reject(tx.error);
+                });
+            }
+        };
+
+        const btnRun = document.getElementById('btn-run');
+        const statPassed = document.getElementById('stat-passed');
+        const statFailed = document.getElementById('stat-failed');
+
+        function setStatus(testNum, status, errorMsg = '') {
+            const el = document.getElementById(`test-${testNum}`);
+            const statusEl = el.querySelector('.test-status');
+            
+            statusEl.className = `test-status status-${status}`;
+            if (status === 'passed') {
+                statusEl.innerHTML = '<i data-lucide="check-circle"></i> Pasada';
+            } else if (status === 'failed') {
+                statusEl.innerHTML = `<i data-lucide="alert-circle"></i> Fallada`;
+                el.querySelector('.test-desc').innerHTML = `<span style="color: var(--red); font-weight: bold;">Error: ${errorMsg}</span>`;
+            } else {
+                statusEl.textContent = 'Ejecutando...';
+            }
+            if (window.lucide) lucide.createIcons();
+        }
+
+        async function runTests() {
+            btnRun.disabled = true;
+            btnRun.textContent = 'Probando...';
+            
+            let passedCount = 0;
+            let failedCount = 0;
+            
+            statPassed.textContent = '0';
+            statFailed.textContent = '0';
+            
+            for(let i=1; i<=5; i++) {
+                const el = document.getElementById(`test-${i}`);
+                el.querySelector('.test-status').className = 'test-status status-pending';
+                el.querySelector('.test-status').textContent = 'Pendiente';
+            }
+            if (window.lucide) lucide.createIcons();
+
+            // ── TEST 1: Conexión ──
+            try {
+                setStatus(1, 'running');
+                await db.open();
+                await db.clearAll(); // Limpieza inicial
+                setStatus(1, 'passed');
+                passedCount++;
+                statPassed.textContent = passedCount;
+            } catch (err) {
+                setStatus(1, 'failed', err.message);
+                failedCount++;
+                statFailed.textContent = failedCount;
+                btnRun.disabled = false;
+                btnRun.textContent = 'Ejecutar Pruebas';
+                return; // Paramos si falla la conexión básica
+            }
+
+            const testListId = 'list_test_123';
+
+            // ── TEST 2: Escritura y Lectura ──
+            try {
+                setStatus(2, 'running');
+                const dummyList = {
+                    id: testListId,
+                    name: 'Lista de Test Automático',
+                    createdAt: new Date().toISOString(),
+                    products: [{ id: 'prod_1', name: 'Zapatos', price: '150.00' }]
+                };
+                await db.saveList(dummyList);
+                
+                const allLists = await db.getLists();
+                const found = allLists.find(l => l.id === testListId);
+                
+                if (found && found.name === 'Lista de Test Automático' && found.products.length === 1) {
+                    setStatus(2, 'passed');
+                    passedCount++;
+                    statPassed.textContent = passedCount;
+                } else {
+                    throw new Error('La lista no se recuperó o los datos no coinciden');
+                }
+            } catch (err) {
+                setStatus(2, 'failed', err.message);
+                failedCount++;
+                statFailed.textContent = failedCount;
+            }
+
+            // ── TEST 3: Modificación ──
+            try {
+                setStatus(3, 'running');
+                const allLists = await db.getLists();
+                const listObj = allLists.find(l => l.id === testListId);
+                
+                if (!listObj) throw new Error('No se encontró la lista para modificar');
+                
+                // Modificamos agregando un producto
+                listObj.products.push({ id: 'prod_2', name: 'Vestido', price: '450.00' });
+                listObj.name = 'Lista de Test Modificada';
+                await db.saveList(listObj);
+                
+                // Recargar y verificar
+                const reloadedLists = await db.getLists();
+                const updated = reloadedLists.find(l => l.id === testListId);
+                
+                if (updated && updated.name === 'Lista de Test Modificada' && updated.products.length === 2) {
+                    setStatus(3, 'passed');
+                    passedCount++;
+                    statPassed.textContent = passedCount;
+                } else {
+                    throw new Error('Los cambios modificados no se persistieron correctamente');
+                }
+            } catch (err) {
+                setStatus(3, 'failed', err.message);
+                failedCount++;
+                statFailed.textContent = failedCount;
+            }
+
+            // ── TEST 4: Configuración Global ──
+            try {
+                setStatus(4, 'running');
+                await db.saveConfig('activeListId', testListId);
+                const val = await db.getConfig('activeListId');
+                
+                if (val === testListId) {
+                    setStatus(4, 'passed');
+                    passedCount++;
+                    statPassed.textContent = passedCount;
+                } else {
+                    throw new Error('El valor de configuración recuperado no coincide');
+                }
+            } catch (err) {
+                setStatus(4, 'failed', err.message);
+                failedCount++;
+                statFailed.textContent = failedCount;
+            }
+
+            // ── TEST 5: Eliminación ──
+            try {
+                setStatus(5, 'running');
+                await db.deleteList(testListId);
+                
+                const allLists = await db.getLists();
+                const found = allLists.find(l => l.id === testListId);
+                
+                if (!found) {
+                    setStatus(5, 'passed');
+                    passedCount++;
+                    statPassed.textContent = passedCount;
+                } else {
+                    throw new Error('La lista sigue existiendo después de la llamada de eliminación');
+                }
+            } catch (err) {
+                setStatus(5, 'failed', err.message);
+                failedCount++;
+                statFailed.textContent = failedCount;
+            }
+
+            btnRun.disabled = false;
+            btnRun.textContent = 'Ejecutar Pruebas';
+        }
+
+        btnRun.addEventListener('click', runTests);
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) lucide.createIcons();
+            // Ejecutar automáticamente al cargar la página
+            runTests();
+        });
+    </script>
+</body>
+</html>
