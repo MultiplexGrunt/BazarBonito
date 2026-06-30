@@ -548,6 +548,8 @@ body {
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
+    /* Fondo sólido para que las opciones sean legibles en todos los temas */
+    background-color: #1a1c38;
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
     background-repeat: no-repeat;
     background-position: right 14px center;
@@ -555,8 +557,17 @@ body {
     padding-right: 40px;
     cursor: pointer;
 }
+.field-group select option {
+    background-color: #1a1c38;
+    color: #eef0ff;
+}
 [data-theme="light"] .field-group select {
+    background-color: #fff0f3;
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+}
+[data-theme="light"] .field-group select option {
+    background-color: #fff0f3;
+    color: #470a1e;
 }
 .field-group input::placeholder { color: var(--text-3); }
 .field-group input:focus,
@@ -2056,7 +2067,8 @@ kbd.kbd-hint {
 }
 
 /* Estilo para el input del buscador de cuentas */
-#summary-search-input {
+#summary-search-input,
+#delivery-search-input {
     background: var(--bg-panel);
     border: 1px solid var(--border);
     border-radius: var(--radius);
@@ -2069,8 +2081,10 @@ kbd.kbd-hint {
     backdrop-filter: blur(12px);
     transition: var(--t);
 }
-#summary-search-input::placeholder { color: var(--text-3); }
-#summary-search-input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(124,58,237,0.12); }
+#summary-search-input::placeholder,
+#delivery-search-input::placeholder { color: var(--text-3); }
+#summary-search-input:focus,
+#delivery-search-input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(124,58,237,0.12); }
 
 /* Botón flotante para subir/bajar (Scroll rápido) */
 .btn-scroll-toggle {
@@ -2644,6 +2658,8 @@ kbd.kbd-hint {
 
 .delivery-place-selector select {
     background: var(--bg-input);
+    /* Fondo sólido para legibilidad de las options */
+    background-color: #1a1c38;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 8px 12px;
@@ -2660,9 +2676,18 @@ kbd.kbd-hint {
     background-size: 14px;
     padding-right: 30px;
 }
+.delivery-place-selector select option {
+    background-color: #1a1c38;
+    color: #eef0ff;
+}
 
 [data-theme="light"] .delivery-place-selector select {
+    background-color: #fff0f3;
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+}
+[data-theme="light"] .delivery-place-selector select option {
+    background-color: #fff0f3;
+    color: #470a1e;
 }
 
 .delivery-place-selector select:focus {
