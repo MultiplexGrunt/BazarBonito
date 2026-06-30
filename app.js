@@ -1,132 +1,159 @@
-'use strict';
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import {
+    initializeFirestore,
+    persistentLocalCache,
+    persistentMultipleTabManager,
+    collection,
+    doc,
+    getDocs,
+    setDoc,
+    deleteDoc,
+    writeBatch
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-/* ============================================================
-   SUBASTALISTA — app.js
-   Flujo optimizado para subastas de WhatsApp
-   ============================================================ */
+// Configuración de Firebase para tu aplicación web
+const firebaseConfig = {
+  apiKey: "AIzaSyAaDWrSWsuED6fDZBAiN_tN2H--UA09TYI",
+  authDomain: "bonitobazar-6adcc.firebaseapp.com",
+  projectId: "bonitobazar-6adcc",
+  storageBucket: "bonitobazar-6adcc.firebasestorage.app",
+  messagingSenderId: "223695169986",
+  appId: "1:223695169986:web:cf55b834ec034042ab0e5b"
+};
+
+// Inicializar Firebase
+const firebaseApp = initializeApp(firebaseConfig);
+
+// Inicializar Firestore con soporte multitestaña y persistencia offline
+const firestoreDb = initializeFirestore(firebaseApp, {
+    localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+    })
+});
 
 // ── ESTADO ──────────────────────────────────────────────────
-const STORAGE_KEY = 'subastalista_v1';
 let lists = [];                // todas las listas en memoria
 let activeListId = null;       // ID de la lista activa
 let products = [];             // productos de la lista activa
 let pendingImage = null;       // imagen capturada esperando ser guardada
 let editingImageBase64 = null; // imagen en el modal de edición
 
-// ── BASE DE DATOS (IndexedDB) ────────────────────────────────
+// ── BASE DE DATOS (Firebase Firestore) ────────────────────────
 const db = {
-    dbName: 'SubastaDB',
-    dbVersion: 1,
-    instance: null,
-
-    open() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.dbName, this.dbVersion);
-
-            request.onupgradeneeded = (e) => {
-                const database = e.target.result;
-                if (!database.objectStoreNames.contains('listas')) {
-                    database.createObjectStore('listas', { keyPath: 'id' });
-                }
-                if (!database.objectStoreNames.contains('config')) {
-                    database.createObjectStore('config', { keyPath: 'key' });
-                }
-            };
-
-            request.onsuccess = (e) => {
-                this.instance = e.target.result;
-                resolve(this.instance);
-            };
-
-            request.onerror = (e) => {
-                reject(new Error('No se pudo abrir la base de datos: ' + e.target.error));
-            };
-        });
+    async open() {
+        // Firestore se abre de forma transparente
+        return true;
     },
 
-    getLists() {
-        return new Promise((resolve, reject) => {
-            const tx = this.instance.transaction('listas', 'readonly');
-            const store = tx.objectStore('listas');
-            const request = store.getAll();
-            request.onsuccess = () => resolve(request.result || []);
-            request.onerror = () => reject(request.error);
-        });
+    async getLists() {
+        try {
+            const querySnapshot = await getDocs(collection(firestoreDb, "listas"));
+            const fetchedLists = [];
+            querySnapshot.forEach((doc) => {
+                fetchedLists.push(doc.data());
+            });
+            // Ordenar de más antiguas a más nuevas para mantener consistencia
+            fetchedLists.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+            return fetchedLists;
+        } catch (err) {
+            console.error("Error al obtener listas de Firestore:", err);
+            throw err;
+        }
     },
 
-    saveList(lista) {
-        return new Promise((resolve, reject) => {
-            const tx = this.instance.transaction('listas', 'readwrite');
-            const store = tx.objectStore('listas');
-            const request = store.put(lista);
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
-        });
+    async saveList(lista) {
+        try {
+            const docRef = doc(firestoreDb, "listas", lista.id);
+            await setDoc(docRef, lista);
+        } catch (err) {
+            console.error("Error al guardar lista en Firestore:", err);
+            throw err;
+        }
     },
 
-    deleteList(id) {
-        return new Promise((resolve, reject) => {
-            const tx = this.instance.transaction('listas', 'readwrite');
-            const store = tx.objectStore('listas');
-            const request = store.delete(id);
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
-        });
+    async deleteList(id) {
+        try {
+            const docRef = doc(firestoreDb, "listas", id);
+            await deleteDoc(docRef);
+        } catch (err) {
+            console.error("Error al eliminar lista de Firestore:", err);
+            throw err;
+        }
     },
 
-    getConfig(key) {
-        return new Promise((resolve, reject) => {
-            const tx = this.instance.transaction('config', 'readonly');
-            const store = tx.objectStore('config');
-            const request = store.get(key);
-            request.onsuccess = () => resolve(request.result ? request.result.value : null);
-            request.onerror = () => reject(request.error);
-        });
+    async getConfig(key) {
+        return localStorage.getItem(`bonitobazar_${key}`);
     },
 
-    saveConfig(key, value) {
-        return new Promise((resolve, reject) => {
-            const tx = this.instance.transaction('config', 'readwrite');
-            const store = tx.objectStore('config');
-            const request = store.put({ key, value });
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
-        });
+    async saveConfig(key, value) {
+        if (value === null || value === undefined) {
+            localStorage.removeItem(`bonitobazar_${key}`);
+        } else {
+            localStorage.setItem(`bonitobazar_${key}`, value);
+        }
     },
 
-    restoreBackup(listsArray, activeId) {
-        return new Promise((resolve, reject) => {
-            if (!this.instance) {
-                reject(new Error('Base de datos no inicializada.'));
-                return;
+    async restoreBackup(listsArray, activeId) {
+        try {
+            const querySnapshot = await getDocs(collection(firestoreDb, "listas"));
+            const batch = writeBatch(firestoreDb);
+            
+            // Eliminar todas las listas de Firestore
+            querySnapshot.forEach((d) => {
+                batch.delete(doc(firestoreDb, "listas", d.id));
+            });
+            
+            // Subir las listas restauradas
+            listsArray.forEach((lista) => {
+                const docRef = doc(firestoreDb, "listas", lista.id);
+                batch.set(docRef, lista);
+            });
+            
+            await batch.commit();
+            
+            if (activeId) {
+                await this.saveConfig('activeListId', activeId);
+            } else {
+                await this.saveConfig('activeListId', null);
             }
-
-            const tx = this.instance.transaction(['listas', 'config'], 'readwrite');
-            const listasStore = tx.objectStore('listas');
-            const configStore = tx.objectStore('config');
-
-            tx.oncomplete = () => resolve();
-            tx.onerror = (e) => reject(tx.error || e.target.error);
-
-            const clearReq = listasStore.clear();
-            clearReq.onsuccess = () => {
-                for (const lista of listsArray) {
-                    listasStore.put(lista);
-                }
-
-                if (activeId) {
-                    configStore.put({ key: 'activeListId', value: activeId });
-                } else {
-                    configStore.delete('activeListId');
-                }
-            };
-
-            clearReq.onerror = () => {
-                tx.abort();
-            };
-        });
+        } catch (err) {
+            console.error("Error al restaurar backup en Firestore:", err);
+            throw err;
+        }
     }
 };
+
+// Función auxiliar para migrar IndexedDB local (si existe) a Firestore la primera vez
+async function migrateIndexedDBToFirestore() {
+    return new Promise((resolve) => {
+        const request = indexedDB.open('SubastaDB', 1);
+        request.onsuccess = (e) => {
+            const idbInstance = e.target.result;
+            if (!idbInstance.objectStoreNames.contains('listas')) {
+                idbInstance.close();
+                resolve([]);
+                return;
+            }
+            
+            const tx = idbInstance.transaction('listas', 'readonly');
+            const store = tx.objectStore('listas');
+            const getAllReq = store.getAll();
+            
+            getAllReq.onsuccess = () => {
+                const localLists = getAllReq.result || [];
+                idbInstance.close();
+                resolve(localLists);
+            };
+            getAllReq.onerror = () => {
+                idbInstance.close();
+                resolve([]);
+            };
+        };
+        request.onerror = () => {
+            resolve([]);
+        };
+    });
+}
 
 // ── PERSISTENCIA Y MIGRACIÓN ─────────────────────────────────
 async function loadFromStorage() {
@@ -135,36 +162,21 @@ async function loadFromStorage() {
         lists = await db.getLists();
         activeListId = await db.getConfig('activeListId');
 
-        // Lógica de migración si no hay listas pero hay datos en localStorage
-        const rawLegacy = localStorage.getItem(STORAGE_KEY);
-        if (lists.length === 0 && rawLegacy) {
-            let legacyProducts = [];
-            try {
-                legacyProducts = JSON.parse(rawLegacy);
-            } catch {
-                legacyProducts = [];
+        // Lógica de migración si Firestore está vacío pero el usuario tiene IndexedDB local
+        if (lists.length === 0) {
+            const localLists = await migrateIndexedDBToFirestore();
+            if (localLists.length > 0) {
+                showToast('info', `Migrando ${localLists.length} lista(s) locales a la nube...`);
+                for (const localList of localLists) {
+                    await db.saveList(localList);
+                }
+                // Recargar desde Firestore tras migrar
+                lists = await db.getLists();
+                showToast('success', '¡Tus listas locales se migraron a la nube con éxito!');
             }
-
-            const migratedList = {
-                id: `list_${Date.now()}`,
-                name: 'Lista Inicial Migrada',
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                products: legacyProducts
-            };
-
-            await db.saveList(migratedList);
-            lists = [migratedList];
-            activeListId = migratedList.id;
-            await db.saveConfig('activeListId', activeListId);
-
-            // Mover localStorage a un backup por seguridad y vaciar original
-            localStorage.setItem(STORAGE_KEY + '_migrated_backup', rawLegacy);
-            localStorage.removeItem(STORAGE_KEY);
-            showToast('success', '¡Datos antiguos migrados a la base de datos con éxito!');
         }
 
-        // Si no hay listas (primer uso sin datos heredados), creamos una lista por defecto
+        // Si no hay listas (primer uso absoluto), creamos la predeterminada
         if (lists.length === 0) {
             const defaultList = {
                 id: `list_${Date.now()}`,
@@ -203,7 +215,7 @@ async function saveToStorage() {
             await db.saveList(activeList);
         }
     } catch (err) {
-        showToast('error', 'Error al guardar (base de datos llena o bloqueada).');
+        showToast('error', 'Error al guardar en la nube (Firestore).');
     }
 }
 
@@ -1987,4 +1999,8 @@ async function init() {
     if (window.lucide) lucide.createIcons();
 }
 
-document.addEventListener('DOMContentLoaded', init);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
