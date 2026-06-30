@@ -656,14 +656,15 @@ kbd.kbd-hint {
 #search-input::placeholder { color: var(--text-3); }
 #search-input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(124,58,237,0.12); }
 
-/* ── LISTA VERTICAL DE PRODUCTOS ── */
-.products-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+/* ── LISTA VERTICAL DE PRODUCTOS (GRID DE CUADRÍCULA POR DEFECTO) ── */
+.products-column-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+    min-height: 150px;
 }
 
-/* Tarjeta en modo lista horizontal */
+/* Tarjeta en modo cuadrícula vertical */
 .product-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -674,7 +675,7 @@ kbd.kbd-hint {
     cursor: pointer;
     transition: var(--t);
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     align-items: stretch;
     animation: card-in 0.3s cubic-bezier(.34,1.56,.64,1) forwards;
     opacity: 0;
@@ -689,10 +690,15 @@ kbd.kbd-hint {
     transform: translateY(-2px);
 }
 
-/* Imagen de la tarjeta (izquierda, compacta e íntegra) */
+[data-theme="light"] .product-card:hover {
+    border-color: rgba(236,72,153,0.4);
+    box-shadow: var(--shadow), 0 0 0 1px rgba(236,72,153,0.08);
+}
+
+/* Imagen de la tarjeta (superior, grande e íntegra con object-fit cover) */
 .card-image {
-    width: 105px;
-    height: 84px;          /* adaptado para caber más elementos */
+    width: 100%;
+    height: 240px;
     flex-shrink: 0;
     background: #08080f;
     position: relative;
@@ -700,12 +706,12 @@ kbd.kbd-hint {
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    cursor: zoom-in;
+    border-bottom: 1px solid var(--border);
 }
 .card-image img {
     width: 100%;
     height: 100%;
-    object-fit: contain; /* imagen COMPLETA, sin recorte */
+    object-fit: cover;
     display: block;
     transition: transform 0.3s ease;
 }
@@ -741,24 +747,20 @@ kbd.kbd-hint {
 }
 .card-compradora-badge svg { width: 11px; height: 11px; flex-shrink: 0; }
 
-/* Info de la tarjeta (derecha) */
+/* Info de la tarjeta (inferior) */
 .card-info {
-    flex: 1;
-    padding: 8px 12px;
+    padding: 12px 14px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    gap: 4px;
-    min-width: 0;
+    gap: 6px;
 }
 .card-name {
     font-family: var(--font-display);
-    font-size: 0.92rem;
+    font-size: 0.95rem;
     font-weight: 700;
     color: var(--text-1);
-    white-space: nowrap;
+    white-space: normal;
     overflow: hidden;
-    text-overflow: ellipsis;
 }
 .card-price {
     font-family: var(--font-display);
@@ -2324,100 +2326,25 @@ kbd.kbd-hint {
     border-color: var(--border) !important;
 }
 
-/* Catálogo en cuadrícula (Grid) para visitantes */
-.is-visitor .products-column-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 16px;
-}
-
+/* Quitar interactividad al cursor en las tarjetas del visitante */
 .is-visitor .product-card {
-    flex-direction: column;
-    align-items: stretch;
-    height: auto;
-    padding: 0;
-    cursor: default !important; /* Quitar pointer click */
-    border-radius: var(--radius-lg);
-    background: var(--bg-card);
-    overflow: hidden;
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow-sm);
-    transition: var(--t);
+    cursor: default !important;
 }
 
-.is-visitor .product-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-    border-color: rgba(124, 58, 237, 0.25);
-}
-
-[data-theme="light"] .is-visitor .product-card:hover {
-    border-color: rgba(236, 72, 153, 0.25);
-}
-
-.is-visitor .card-image {
-    width: 100%;
-    height: 240px; /* Foto grande y de excelente visibilidad */
-    border-radius: 0;
-    border-bottom: 1px solid var(--border);
-}
-
-.is-visitor .card-image img {
-    border-radius: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.is-visitor .card-image .card-no-image {
-    border-radius: 0;
-    height: 100%;
-}
-
-.is-visitor .card-info {
-    padding: 12px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.is-visitor .card-name {
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: var(--text-1);
-    white-space: normal; /* Permitir wrap de texto de prendas largas */
-}
-
-.is-visitor .card-price {
-    font-size: 1.25rem;
-    font-weight: 800;
-    color: var(--accent-h);
-}
-
-[data-theme="light"] .is-visitor .card-price {
-    color: var(--accent);
-}
-
-.is-visitor .card-compradora-info {
-    font-size: 0.8rem;
-    color: var(--text-2);
-    margin-top: 4px;
-}
-
-/* Adaptación responsive para grilla en dispositivos móviles */
+/* Adaptación responsive para la grilla en dispositivos móviles (Global) */
 @media (max-width: 640px) {
-    .is-visitor .products-column-list {
-        grid-template-columns: repeat(2, 1fr); /* Cuadrícula a 2 columnas */
-        gap: 10px;
+    .products-column-list {
+        grid-template-columns: repeat(2, 1fr) !important; /* Cuadrícula a 2 columnas en móviles */
+        gap: 10px !important;
     }
-    .is-visitor .card-image {
-        height: 180px; /* Tamaño optimizado de imagen en móviles */
+    .card-image {
+        height: 180px !important; /* Tamaño de imagen adaptado */
     }
-    .is-visitor .card-info {
-        padding: 10px;
+    .card-info {
+        padding: 10px !important;
     }
-    .is-visitor .card-price {
-        font-size: 1.1rem;
+    .card-price {
+        font-size: 1.1rem !important;
     }
 }
 
