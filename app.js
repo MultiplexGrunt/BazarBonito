@@ -2643,9 +2643,9 @@ function createProductCard(p, i) {
             const statusLabel = isPagado ? 'Pagado' : 'Pendiente';
             const paymentDisabledClass = isPagado ? '' : 'disabled';
 
-            // Galería de imágenes en miniatura
+            // Cuadrícula de imágenes
             const imagesHtml = buyerData.images.length > 0
-                ? `<div class="delivery-images-strip">${buyerData.images.map(img =>
+                ? `<div class="delivery-images-grid">${buyerData.images.map(img =>
                     `<img class="delivery-thumb" src="${img.src}" alt="${escHtml(img.name)}" title="${escHtml(img.name)}">`
                   ).join('')}</div>`
                 : '';
@@ -2655,43 +2655,49 @@ function createProductCard(p, i) {
             row.dataset.compradora = name;
 
             row.innerHTML = `
-                <div class="delivery-buyer-info">
-                    ${imagesHtml}
+                <!-- Cabecera: nombre + total -->
+                <div class="delivery-card-header">
                     <div class="delivery-buyer-name">
                         <i data-lucide="user"></i>
                         ${escHtml(name)}
                     </div>
-                    <div class="delivery-buyer-total">$${buyerData.total.toFixed(2)}</div>
-                    <div class="delivery-buyer-items-hint">${buyerData.items.length} prenda${buyerData.items.length !== 1 ? 's' : ''}: ${buyerData.items.map(i => escHtml(i.name)).join(', ')}</div>
+                    <div class="delivery-header-right">
+                        <div class="delivery-buyer-total">$${buyerData.total.toFixed(2)}</div>
+                        <div class="delivery-buyer-items-hint">${buyerData.items.length} prenda${buyerData.items.length !== 1 ? 's' : ''}</div>
+                    </div>
                 </div>
-                <div class="delivery-controls">
-                    <div class="delivery-place-selector">
-                        <label>Lugar de Entrega</label>
-                        <select class="delivery-place-select" data-compradora="${escHtml(name)}">
-                            <option value="">— Sin especificar —</option>
-                            <option value="Tuxtla" ${delivery.lugar === 'Tuxtla' ? 'selected' : ''}>Tuxtla</option>
-                            <option value="Berriozabal" ${delivery.lugar === 'Berriozabal' ? 'selected' : ''}>Berriozabal</option>
-                            <option value="Patria" ${delivery.lugar === 'Patria' ? 'selected' : ''}>Patria</option>
-                            <option value="Shanka" ${delivery.lugar === 'Shanka' ? 'selected' : ''}>Shanka</option>
-                            <option value="Otro" ${delivery.lugar === 'Otro' ? 'selected' : ''}>Otro</option>
-                        </select>
-                    </div>
-                    <div class="delivery-status-control">
-                        <span>Estatus</span>
-                        <button class="btn-status-toggle ${statusClass}" data-compradora="${escHtml(name)}">
-                            <i data-lucide="${statusIcon}"></i>
-                            ${statusLabel}
-                        </button>
-                    </div>
-                    <div class="delivery-payment-control">
-                        <label>Tipo de Pago</label>
-                        <div class="payment-options-segment ${paymentDisabledClass}">
-                            <button class="btn-payment-option ${delivery.paymentType === 'efectivo' ? 'active' : ''}" data-compradora="${escHtml(name)}" data-type="efectivo">
-                                Efectivo
+                <!-- Cuerpo: imágenes + controles -->
+                <div class="delivery-card-body">
+                    ${imagesHtml}
+                    <div class="delivery-card-controls">
+                        <div class="delivery-place-selector">
+                            <label>Lugar de Entrega</label>
+                            <select class="delivery-place-select" data-compradora="${escHtml(name)}">
+                                <option value="">— Sin especificar —</option>
+                                <option value="Tuxtla" ${delivery.lugar === 'Tuxtla' ? 'selected' : ''}>Tuxtla</option>
+                                <option value="Berriozabal" ${delivery.lugar === 'Berriozabal' ? 'selected' : ''}>Berriozabal</option>
+                                <option value="Patria" ${delivery.lugar === 'Patria' ? 'selected' : ''}>Patria</option>
+                                <option value="Shanka" ${delivery.lugar === 'Shanka' ? 'selected' : ''}>Shanka</option>
+                                <option value="Otro" ${delivery.lugar === 'Otro' ? 'selected' : ''}>Otro</option>
+                            </select>
+                        </div>
+                        <div class="delivery-status-control">
+                            <span>Estatus</span>
+                            <button class="btn-status-toggle ${statusClass}" data-compradora="${escHtml(name)}">
+                                <i data-lucide="${statusIcon}"></i>
+                                ${statusLabel}
                             </button>
-                            <button class="btn-payment-option ${delivery.paymentType === 'transferencia' ? 'active' : ''}" data-compradora="${escHtml(name)}" data-type="transferencia">
-                                Transferencia
-                            </button>
+                        </div>
+                        <div class="delivery-payment-control">
+                            <label>Tipo de Pago</label>
+                            <div class="payment-options-segment ${paymentDisabledClass}">
+                                <button class="btn-payment-option ${delivery.paymentType === 'efectivo' ? 'active' : ''}" data-compradora="${escHtml(name)}" data-type="efectivo">
+                                    Efectivo
+                                </button>
+                                <button class="btn-payment-option ${delivery.paymentType === 'transferencia' ? 'active' : ''}" data-compradora="${escHtml(name)}" data-type="transferencia">
+                                    Transferencia
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

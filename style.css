@@ -2566,15 +2566,15 @@ kbd.kbd-hint {
     padding-bottom: 30px;
 }
 
+/* Tarjeta vertical: header + body */
 .delivery-row {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    padding: 16px 20px;
-    gap: 20px;
+    padding: 16px 18px;
+    gap: 14px;
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     transition: var(--t);
@@ -2582,7 +2582,6 @@ kbd.kbd-hint {
 
 .delivery-row:hover {
     border-color: rgba(124, 58, 237, 0.25);
-    transform: translateY(-1px);
     box-shadow: var(--shadow);
 }
 
@@ -2590,10 +2589,12 @@ kbd.kbd-hint {
     border-color: rgba(236, 72, 153, 0.25);
 }
 
-/* Columna de información de la compradora */
-.delivery-buyer-info {
-    flex: 2;
-    min-width: 200px;
+/* Cabecera: nombre a la izquierda, total+cantidad a la derecha */
+.delivery-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
 }
 
 .delivery-buyer-name {
@@ -2606,11 +2607,23 @@ kbd.kbd-hint {
     gap: 8px;
 }
 
+.delivery-buyer-name svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.delivery-header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
 .delivery-buyer-total {
-    font-size: 1.15rem;
+    font-size: 1.1rem;
     font-weight: 900;
-    color: var(--text-1);
-    margin-top: 4px;
     background: linear-gradient(90deg, var(--accent-h), #60a5fa);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -2625,45 +2638,52 @@ kbd.kbd-hint {
 }
 
 .delivery-buyer-items-hint {
-    font-size: 0.76rem;
+    font-size: 0.73rem;
     color: var(--text-3);
-    margin-top: 3px;
 }
 
-/* Tira de imágenes en miniatura por compradora */
-.delivery-images-strip {
+/* Cuerpo: imágenes a la izquierda, controles a la derecha */
+.delivery-card-body {
     display: flex;
-    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+/* Cuadrícula de imágenes */
+.delivery-images-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
     gap: 6px;
-    margin-bottom: 10px;
+    flex: 1;
+    min-width: 0;
 }
 
 .delivery-thumb {
-    width: 52px;
-    height: 52px;
+    width: 100%;
+    aspect-ratio: 1 / 1;
     object-fit: cover;
-    border-radius: 8px;
+    border-radius: 10px;
     border: 1px solid var(--border);
     background: var(--bg-input);
     transition: transform 0.18s, box-shadow 0.18s;
     cursor: zoom-in;
+    display: block;
 }
 
 .delivery-thumb:hover {
-    transform: scale(1.12);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    transform: scale(1.08);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.4);
     z-index: 2;
     position: relative;
 }
 
-/* Controles de entrega en fila flexible */
-.delivery-controls {
-    flex: 3;
+/* Columna de controles */
+.delivery-card-controls {
     display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 20px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 12px;
+    flex-shrink: 0;
+    width: 210px;
 }
 
 /* Selector de lugar de entrega */
@@ -2671,7 +2691,6 @@ kbd.kbd-hint {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    min-width: 140px;
 }
 
 .delivery-place-selector label {
@@ -2684,7 +2703,6 @@ kbd.kbd-hint {
 
 .delivery-place-selector select {
     background: var(--bg-input);
-    /* Fondo sólido para legibilidad de las options */
     background-color: #1a1c38;
     border: 1px solid var(--border);
     border-radius: var(--radius);
@@ -2701,6 +2719,7 @@ kbd.kbd-hint {
     background-position: right 10px center;
     background-size: 14px;
     padding-right: 30px;
+    width: 100%;
 }
 .delivery-place-selector select option {
     background-color: #1a1c38;
@@ -2747,9 +2766,10 @@ kbd.kbd-hint {
     cursor: pointer;
     transition: var(--t);
     border: 1px solid transparent;
+    width: 100%;
+    justify-content: center;
 }
 
-/* Estado pendiente */
 .btn-status-toggle.status-pendiente {
     background: rgba(239, 68, 68, 0.08);
     border-color: rgba(239, 68, 68, 0.25);
@@ -2761,7 +2781,6 @@ kbd.kbd-hint {
     border-color: rgba(239, 68, 68, 0.45);
 }
 
-/* Estado pagado */
 .btn-status-toggle.status-pagado {
     background: rgba(16, 185, 129, 0.08);
     border-color: rgba(16, 185, 129, 0.25);
@@ -2794,7 +2813,7 @@ kbd.kbd-hint {
 }
 
 .payment-options-segment {
-    display: inline-flex;
+    display: flex;
     background: var(--bg-input);
     border: 1px solid var(--border);
     border-radius: var(--radius);
@@ -2811,13 +2830,14 @@ kbd.kbd-hint {
     border-radius: 4px;
     cursor: pointer;
     transition: var(--t);
+    flex: 1;
+    text-align: center;
 }
 
 .btn-payment-option:hover {
     color: var(--text-1);
 }
 
-/* Opción seleccionada */
 .btn-payment-option.active {
     background: var(--accent-h);
     color: white;
@@ -2833,26 +2853,18 @@ kbd.kbd-hint {
     pointer-events: none;
 }
 
-/* Responsive para la fila de entrega */
-@media (max-width: 768px) {
-    .delivery-row {
+/* Responsive para tarjetas de entrega */
+@media (max-width: 640px) {
+    .delivery-card-body {
         flex-direction: column;
-        align-items: stretch;
         gap: 14px;
-        padding: 14px;
-    }
-    
-    .delivery-controls {
-        justify-content: flex-start;
-        gap: 12px;
     }
 
-    .delivery-place-selector,
-    .delivery-status-control,
-    .delivery-payment-control {
-        flex: 1;
-        min-width: 120px;
+    .delivery-images-grid {
+        grid-template-columns: repeat(auto-fill, minmax(68px, 1fr));
+    }
+
+    .delivery-card-controls {
+        width: 100%;
     }
 }
-
-
