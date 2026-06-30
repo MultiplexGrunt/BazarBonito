@@ -427,6 +427,13 @@ const btnLoginGoogle = document.getElementById('btn-login-google');
 const btnVisitor = document.getElementById('btn-visitor');
 const btnLogout = document.getElementById('btn-logout');
 
+// Modal Vista Previa de Imagen (Visitante)
+const imagePreviewModal = document.getElementById('image-preview-modal');
+const imagePreviewImg = document.getElementById('image-preview-img');
+const imagePreviewTitle = document.getElementById('image-preview-title');
+const imagePreviewPrice = document.getElementById('image-preview-price');
+const btnCloseImagePreview = document.getElementById('btn-close-image-preview');
+
 // ── AUTENTICACIÓN Y CONTROL DE ROLES (Google Sign-In) ─────────
 
 /**
@@ -1023,12 +1030,20 @@ function createProductCard(p, i) {
     }
 
     card.addEventListener('click', () => {
-        if (isAdmin) openEditModal(p.id);
+        if (isAdmin) {
+            openEditModal(p.id);
+        } else {
+            openImagePreview(p);
+        }
     });
     card.addEventListener('keydown', e => { 
         if (e.key === 'Enter' || e.key === ' ') { 
             e.preventDefault(); 
-            if (isAdmin) openEditModal(p.id); 
+            if (isAdmin) {
+                openEditModal(p.id);
+            } else {
+                openImagePreview(p);
+            }
         } 
     });
 
@@ -1216,10 +1231,42 @@ function closeEditModal() {
     editingImageBase64 = null;
 }
 
+// ── MODAL VISTA PREVIA DE IMAGEN (VISITANTE) ──
+function openImagePreview(p) {
+    if (!p.image) {
+        showToast('info', 'Esta prenda no cuenta con una imagen.');
+        return;
+    }
+    imagePreviewImg.src = p.image;
+    imagePreviewTitle.textContent = p.name;
+    imagePreviewPrice.textContent = `$${p.price}`;
+    
+    imagePreviewModal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    if (window.lucide) lucide.createIcons();
+}
+
+function closeImagePreview() {
+    imagePreviewModal.style.display = 'none';
+    document.body.style.overflow = '';
+    imagePreviewImg.src = '';
+}
+
 btnCloseModal.addEventListener('click', closeEditModal);
 editModal.addEventListener('click', e => { if (e.target === editModal) closeEditModal(); });
+
+if (btnCloseImagePreview) {
+    btnCloseImagePreview.addEventListener('click', closeImagePreview);
+}
+if (imagePreviewModal) {
+    imagePreviewModal.addEventListener('click', e => { if (e.target === imagePreviewModal) closeImagePreview(); });
+}
+
 document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && editModal.style.display === 'flex') closeEditModal();
+    if (e.key === 'Escape') {
+        if (editModal.style.display === 'flex') closeEditModal();
+        if (imagePreviewModal.style.display === 'flex') closeImagePreview();
+    }
 });
 
 // Guardar edición (también con Enter)

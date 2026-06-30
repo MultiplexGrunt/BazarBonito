@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=6">
+    <link rel="stylesheet" href="style.css?v=7">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 </head>
@@ -425,6 +425,22 @@
             </div>
             <div class="welcome-footer">
                 <span>© 2026 Bonito Bazar</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── MODAL VISTA PREVIA DE IMAGEN (VISITANTE) ── -->
+    <div id="image-preview-modal" class="modal-backdrop" style="display: none;">
+        <div class="image-preview-card">
+            <button id="btn-close-image-preview" class="btn-modal-close-overlay" aria-label="Cerrar vista previa">
+                <i data-lucide="x"></i>
+            </button>
+            <div class="image-preview-content">
+                <img id="image-preview-img" src="" alt="Vista previa de prenda">
+            </div>
+            <div class="image-preview-footer">
+                <h3 id="image-preview-title">Nombre de la Prenda</h3>
+                <span id="image-preview-price">$0.00</span>
             </div>
         </div>
     </div>
