@@ -182,140 +182,6 @@ const db = {
     }
 };
 
-// ── AUTENTICACIÓN Y CONTROL DE ROLES (Google Sign-In) ─────────
-
-/**
- * Actualiza de forma reactiva la interfaz del DOM según si el usuario es Admin o Visitante
- */
-function updateRoleUI() {
-    // 1. Mostrar/Ocultar pantalla de bienvenida
-    if (welcomeOverlay) {
-        if (!userRoleDecided && !isAdmin) {
-            welcomeOverlay.style.display = 'flex';
-        } else {
-            welcomeOverlay.style.display = 'none';
-        }
-    }
-
-    // 2. Botón de cerrar sesión en el header
-    if (btnLogout) {
-        btnLogout.style.display = isAdmin ? 'inline-flex' : 'none';
-    }
-
-    // 3. Botón de agregar producto
-    if (btnToggleForm) {
-        btnToggleForm.style.display = isAdmin ? 'inline-flex' : 'none';
-    }
-
-    // 4. Selector de herramientas administrativas (engranaje)
-    const toolsContainer = document.querySelector('.tools-selector-container');
-    if (toolsContainer) {
-        toolsContainer.style.display = isAdmin ? 'inline-flex' : 'none';
-    }
-
-    // 5. Botones de acción administrativa en el menú de listas
-    const dropdownActions = document.querySelector('.dropdown-actions');
-    if (dropdownActions) {
-        dropdownActions.style.display = isAdmin ? 'flex' : 'none';
-    }
-    const dropdownDivider = document.querySelector('.dropdown-divider');
-    if (dropdownDivider) {
-        dropdownDivider.style.display = isAdmin ? 'block' : 'none';
-    }
-
-    // 6. Comportamiento interactivo en el modal de edición/detalle de producto
-    if (editModal && editModal.style.display === 'flex') {
-        const titleEl = document.getElementById('edit-modal-title');
-        const submitBtn = editForm.querySelector('.btn-save-edit');
-        const overlayImgAction = document.querySelector('.edit-image-overlay');
-        const linkBtnImgAction = document.getElementById('btn-edit-add-image');
-
-        if (isAdmin) {
-            if (titleEl) titleEl.textContent = "Editar Producto";
-            editName.disabled = false;
-            editPrice.disabled = false;
-            editCompradora.disabled = false;
-            if (submitBtn) submitBtn.style.display = 'inline-flex';
-            if (btnDeleteProduct) btnDeleteProduct.style.display = 'inline-flex';
-            if (overlayImgAction) overlayImgAction.style.display = 'flex';
-            if (linkBtnImgAction) linkBtnImgAction.style.display = 'inline-block';
-        } else {
-            if (titleEl) titleEl.textContent = "Detalle del Producto";
-            editName.disabled = true;
-            editPrice.disabled = true;
-            editCompradora.disabled = true;
-            if (submitBtn) submitBtn.style.display = 'none';
-            if (btnDeleteProduct) btnDeleteProduct.style.display = 'none';
-            if (overlayImgAction) overlayImgAction.style.display = 'none';
-            if (linkBtnImgAction) linkBtnImgAction.style.display = 'none';
-        }
-    }
-}
-
-// Escuchar cambios de estado en Firebase Auth
-onAuthStateChanged(firebaseAuth, async (user) => {
-    if (user) {
-        if (user.email === ADMIN_EMAIL) {
-            isAdmin = true;
-            userRoleDecided = true;
-            showToast('success', `¡Bienvenido Administrador: ${user.displayName || user.email}!`);
-        } else {
-            // Usuario autenticado con Google pero no es el administrador
-            isAdmin = false;
-            userRoleDecided = true;
-            showToast('error', 'Acceso denegado. Esta cuenta no es el Administrador.');
-            // Cerrar sesión en Firebase inmediatamente
-            try {
-                await signOut(firebaseAuth);
-            } catch (err) {
-                console.error("Error al cerrar sesión no autorizada:", err);
-            }
-        }
-    } else {
-        isAdmin = false;
-    }
-    updateRoleUI();
-    // Forzar renderizado para ajustar elementos según rol
-    renderProducts();
-});
-
-// Registrar eventos de botones de la pantalla de bienvenida
-if (btnLoginGoogle) {
-    btnLoginGoogle.addEventListener('click', async () => {
-        try {
-            showToast('info', 'Conectando con Google...');
-            await signInWithPopup(firebaseAuth, googleProvider);
-        } catch (err) {
-            console.error("Error al iniciar sesión con Google:", err);
-            showToast('error', 'Error al conectar con Google: ' + err.message);
-        }
-    });
-}
-
-if (btnVisitor) {
-    btnVisitor.addEventListener('click', () => {
-        isAdmin = false;
-        userRoleDecided = true;
-        showToast('info', 'Entrando en modo de solo lectura (Visitante).');
-        updateRoleUI();
-        renderProducts();
-    });
-}
-
-if (btnLogout) {
-    btnLogout.addEventListener('click', async () => {
-        if (confirm('¿Cerrar sesión de Administrador?')) {
-            try {
-                userRoleDecided = false;
-                await signOut(firebaseAuth);
-                showToast('success', 'Sesión cerrada. Ahora eres visitante.');
-            } catch (err) {
-                showToast('error', 'Error al cerrar sesión: ' + err.message);
-            }
-        }
-    });
-}
-
 // Función auxiliar para migrar IndexedDB local (si existe) a Firestore la primera vez
 async function migrateIndexedDBToFirestore() {
     return new Promise((resolve) => {
@@ -559,6 +425,140 @@ const welcomeOverlay = document.getElementById('welcome-overlay');
 const btnLoginGoogle = document.getElementById('btn-login-google');
 const btnVisitor = document.getElementById('btn-visitor');
 const btnLogout = document.getElementById('btn-logout');
+
+// ── AUTENTICACIÓN Y CONTROL DE ROLES (Google Sign-In) ─────────
+
+/**
+ * Actualiza de forma reactiva la interfaz del DOM según si el usuario es Admin o Visitante
+ */
+function updateRoleUI() {
+    // 1. Mostrar/Ocultar pantalla de bienvenida
+    if (welcomeOverlay) {
+        if (!userRoleDecided && !isAdmin) {
+            welcomeOverlay.style.display = 'flex';
+        } else {
+            welcomeOverlay.style.display = 'none';
+        }
+    }
+
+    // 2. Botón de cerrar sesión en el header
+    if (btnLogout) {
+        btnLogout.style.display = isAdmin ? 'inline-flex' : 'none';
+    }
+
+    // 3. Botón de agregar producto
+    if (btnToggleForm) {
+        btnToggleForm.style.display = isAdmin ? 'inline-flex' : 'none';
+    }
+
+    // 4. Selector de herramientas administrativas (engranaje)
+    const toolsContainer = document.querySelector('.tools-selector-container');
+    if (toolsContainer) {
+        toolsContainer.style.display = isAdmin ? 'inline-flex' : 'none';
+    }
+
+    // 5. Botones de acción administrativa en el menú de listas
+    const dropdownActions = document.querySelector('.dropdown-actions');
+    if (dropdownActions) {
+        dropdownActions.style.display = isAdmin ? 'flex' : 'none';
+    }
+    const dropdownDivider = document.querySelector('.dropdown-divider');
+    if (dropdownDivider) {
+        dropdownDivider.style.display = isAdmin ? 'block' : 'none';
+    }
+
+    // 6. Comportamiento interactivo en el modal de edición/detalle de producto
+    if (editModal && editModal.style.display === 'flex') {
+        const titleEl = document.getElementById('edit-modal-title');
+        const submitBtn = editForm.querySelector('.btn-save-edit');
+        const overlayImgAction = document.querySelector('.edit-image-overlay');
+        const linkBtnImgAction = document.getElementById('btn-edit-add-image');
+
+        if (isAdmin) {
+            if (titleEl) titleEl.textContent = "Editar Producto";
+            editName.disabled = false;
+            editPrice.disabled = false;
+            editCompradora.disabled = false;
+            if (submitBtn) submitBtn.style.display = 'inline-flex';
+            if (btnDeleteProduct) btnDeleteProduct.style.display = 'inline-flex';
+            if (overlayImgAction) overlayImgAction.style.display = 'flex';
+            if (linkBtnImgAction) linkBtnImgAction.style.display = 'inline-block';
+        } else {
+            if (titleEl) titleEl.textContent = "Detalle del Producto";
+            editName.disabled = true;
+            editPrice.disabled = true;
+            editCompradora.disabled = true;
+            if (submitBtn) submitBtn.style.display = 'none';
+            if (btnDeleteProduct) btnDeleteProduct.style.display = 'none';
+            if (overlayImgAction) overlayImgAction.style.display = 'none';
+            if (linkBtnImgAction) linkBtnImgAction.style.display = 'none';
+        }
+    }
+}
+
+// Escuchar cambios de estado en Firebase Auth
+onAuthStateChanged(firebaseAuth, async (user) => {
+    if (user) {
+        if (user.email === ADMIN_EMAIL) {
+            isAdmin = true;
+            userRoleDecided = true;
+            showToast('success', `¡Bienvenido Administrador: ${user.displayName || user.email}!`);
+        } else {
+            // Usuario autenticado con Google pero no es el administrador
+            isAdmin = false;
+            userRoleDecided = true;
+            showToast('error', 'Acceso denegado. Esta cuenta no es el Administrador.');
+            // Cerrar sesión en Firebase inmediatamente
+            try {
+                await signOut(firebaseAuth);
+            } catch (err) {
+                console.error("Error al cerrar sesión no autorizada:", err);
+            }
+        }
+    } else {
+        isAdmin = false;
+    }
+    updateRoleUI();
+    // Forzar renderizado para ajustar elementos según rol
+    renderProducts();
+});
+
+// Registrar eventos de botones de la pantalla de bienvenida
+if (btnLoginGoogle) {
+    btnLoginGoogle.addEventListener('click', async () => {
+        try {
+            showToast('info', 'Conectando con Google...');
+            await signInWithPopup(firebaseAuth, googleProvider);
+        } catch (err) {
+            console.error("Error al iniciar sesión con Google:", err);
+            showToast('error', 'Error al conectar con Google: ' + err.message);
+        }
+    });
+}
+
+if (btnVisitor) {
+    btnVisitor.addEventListener('click', () => {
+        isAdmin = false;
+        userRoleDecided = true;
+        showToast('info', 'Entrando en modo de solo lectura (Visitante).');
+        updateRoleUI();
+        renderProducts();
+    });
+}
+
+if (btnLogout) {
+    btnLogout.addEventListener('click', async () => {
+        if (confirm('¿Cerrar sesión de Administrador?')) {
+            try {
+                userRoleDecided = false;
+                await signOut(firebaseAuth);
+                showToast('success', 'Sesión cerrada. Ahora eres visitante.');
+            } catch (err) {
+                showToast('error', 'Error al cerrar sesión: ' + err.message);
+            }
+        }
+    });
+}
 
 let promptMode = 'create'; // 'create' o 'rename'
 let soldSortMode = 'default'; // 'default', 'buyer-asc', 'buyer-desc'
