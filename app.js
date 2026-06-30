@@ -250,9 +250,10 @@ async function loadFromStorage() {
             await db.saveConfig('activeListId', activeListId);
         }
 
-        // Si no hay activeListId o ya no existe en las listas, seleccionar la primera
-        if (!activeListId || !lists.some(l => l.id === activeListId)) {
-            activeListId = lists[0].id;
+        // Seleccionar siempre la lista más reciente al ingresar a la aplicación
+        if (lists.length > 0) {
+            const sortedRecent = [...lists].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            activeListId = sortedRecent[0].id;
             await db.saveConfig('activeListId', activeListId);
         }
 
