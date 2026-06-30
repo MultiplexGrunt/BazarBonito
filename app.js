@@ -439,6 +439,7 @@ const btnClearImage = document.getElementById('btn-clear-image');
 const addForm = document.getElementById('add-form');
 const inputName = document.getElementById('input-name');
 const inputPrice = document.getElementById('input-price');
+const inputTalla = document.getElementById('input-talla');
 const btnCancelForm = document.getElementById('btn-cancel-form');
 const listsColumns = document.getElementById('lists-columns');
 const productsAvailable = document.getElementById('products-available');
@@ -458,6 +459,7 @@ const editForm = document.getElementById('edit-form');
 const editId = document.getElementById('edit-id');
 const editName = document.getElementById('edit-name');
 const editPrice = document.getElementById('edit-price');
+const editTalla = document.getElementById('edit-talla');
 const editCompradora = document.getElementById('edit-compradora');
 const editPreviewImg = document.getElementById('edit-preview-img');
 const editImageContainer = document.getElementById('edit-image-container');
@@ -880,6 +882,7 @@ addForm.addEventListener('submit', e => {
 
     const name = inputName.value.trim();
     const price = inputPrice.value;
+    const talla = inputTalla.value;
 
     // Validación mínima
     let valid = true;
@@ -895,6 +898,7 @@ addForm.addEventListener('submit', e => {
         id: uid(),
         name,
         price: fmtPrice(price),
+        talla,
         image: pendingImage,
         compradora: '',
         createdAt: now,
@@ -1116,7 +1120,7 @@ function createProductCard(p, i) {
         </div>
         <div class="card-info">
             <div class="card-name">${escHtml(p.name)}</div>
-            <div class="card-price">$${escHtml(p.price)}</div>
+            <div class="card-price">$${escHtml(p.price)}${p.talla ? ` <span class="card-talla" style="font-size: 0.74rem; font-weight: 600; color: var(--text-3); margin-left: 4px; vertical-align: middle;">• Talla ${escHtml(p.talla)}</span>` : ''}</div>
             ${p.compradora ? `<div class="card-compradora-info"><i data-lucide="user-check"></i>${escHtml(p.compradora)}</div>` : ''}
         </div>
     `;
@@ -1288,6 +1292,7 @@ function createProductCard(p, i) {
         editId.value = id;
         editName.value = p.name;
         editPrice.value = p.price;
+        editTalla.value = p.talla || '';
         editCompradora.value = p.compradora || '';
         editingImageBase64 = p.image;
 
@@ -1339,7 +1344,7 @@ function createProductCard(p, i) {
         }
         imagePreviewImg.src = p.image;
         imagePreviewTitle.textContent = p.name;
-        imagePreviewPrice.textContent = `$${p.price}`;
+        imagePreviewPrice.textContent = `$${p.price}${p.talla ? ` • Talla: ${p.talla}` : ''}`;
 
         // Obtener la hora aproximada de subasta (12 horas AM/PM) sin fecha
         let timeStr = '--:--';
@@ -1393,6 +1398,7 @@ function createProductCard(p, i) {
 
         const name = editName.value.trim();
         const price = editPrice.value;
+        const talla = editTalla.value;
 
         let valid = true;
         if (!name) { editName.classList.add('invalid'); valid = false; }
@@ -1427,6 +1433,7 @@ function createProductCard(p, i) {
             ...products[idx],
             name,
             price: newPrice,
+            talla,
             compradora: newComp,
             image: editingImageBase64,
             updatedAt: new Date().toISOString(),

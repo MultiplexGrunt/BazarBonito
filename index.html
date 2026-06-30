@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=15">
+    <link rel="stylesheet" href="style.css?v=16">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 </head>
@@ -154,17 +154,29 @@
                                 <label for="input-name">Nombre del producto</label>
                                 <input type="text" id="input-name" placeholder="Ej. Bolsa de piel rosa" required tabindex="1">
                             </div>
-                            <div class="field-group">
-                                <label for="input-price">Precio base ($)</label>
-                                <input type="number" id="input-price" placeholder="0.00" step="0.01" min="0" required tabindex="2">
+                            <div class="field-row">
+                                <div class="field-group">
+                                    <label for="input-price">Precio base ($)</label>
+                                    <input type="number" id="input-price" placeholder="0.00" step="0.01" min="0" required tabindex="2">
+                                </div>
+                                <div class="field-group">
+                                    <label for="input-talla">Talla</label>
+                                    <select id="input-talla" tabindex="3">
+                                        <option value="">Sin Talla</option>
+                                        <option value="XL">XL</option>
+                                        <option value="L">L</option>
+                                        <option value="M">M</option>
+                                        <option value="Ch">Ch</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="form-submit-row">
-                                <button type="submit" id="btn-add" class="btn-add" tabindex="3">
+                                <button type="submit" id="btn-add" class="btn-add" tabindex="4">
                                     <i data-lucide="plus-circle"></i>
                                     <span>Guardar</span>
                                     <kbd class="kbd-hint">Enter</kbd>
                                 </button>
-                                <button type="button" id="btn-cancel-form" class="btn-cancel-form" tabindex="4">
+                                <button type="button" id="btn-cancel-form" class="btn-cancel-form" tabindex="5">
                                     Cancelar
                                 </button>
                             </div>
@@ -281,9 +293,21 @@
                                 <label for="edit-name">Nombre del producto</label>
                                 <input type="text" id="edit-name" placeholder="Nombre del producto" required>
                             </div>
-                            <div class="field-group">
-                                <label for="edit-price">Precio ($)</label>
-                                <input type="number" id="edit-price" placeholder="0.00" step="0.01" min="0" required>
+                            <div class="field-row">
+                                <div class="field-group">
+                                    <label for="edit-price">Precio ($)</label>
+                                    <input type="number" id="edit-price" placeholder="0.00" step="0.01" min="0" required>
+                                </div>
+                                <div class="field-group">
+                                    <label for="edit-talla">Talla</label>
+                                    <select id="edit-talla">
+                                        <option value="">Sin Talla</option>
+                                        <option value="XL">XL</option>
+                                        <option value="L">L</option>
+                                        <option value="M">M</option>
+                                        <option value="Ch">Ch</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="field-group compradora-group">
                                 <label for="edit-compradora">
@@ -447,6 +471,6 @@
     </div>
 
     <div id="toast" class="toast" aria-live="polite"></div>
-    <script type="module" src="app.js?v=15"></script>
+    <script type="module" src="app.js?v=16"></script>
 </body>
 </html>

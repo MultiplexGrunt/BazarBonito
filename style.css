@@ -531,7 +531,8 @@ body {
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
-.field-group input {
+.field-group input,
+.field-group select {
     background: var(--bg-input);
     border: 1px solid var(--border);
     border-radius: var(--radius);
@@ -543,15 +544,39 @@ body {
     transition: var(--t);
     width: 100%;
 }
+.field-group select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 16px;
+    padding-right: 40px;
+    cursor: pointer;
+}
+[data-theme="light"] .field-group select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+}
 .field-group input::placeholder { color: var(--text-3); }
-.field-group input:focus {
+.field-group input:focus,
+.field-group select:focus {
     border-color: var(--border-focus);
     background: var(--bg-input-f);
     box-shadow: 0 0 0 3px rgba(124,58,237,0.14);
 }
-.field-group input.invalid {
+.field-group input.invalid,
+.field-group select.invalid {
     border-color: var(--red);
     box-shadow: 0 0 0 3px rgba(248,113,113,0.14);
+}
+
+.field-row {
+    display: flex;
+    gap: 12px;
+}
+.field-row .field-group {
+    flex: 1;
 }
 
 .label-icon { width: 12px; height: 12px; display: inline; vertical-align: middle; margin-right: 4px; }
