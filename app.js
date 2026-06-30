@@ -2575,14 +2575,15 @@ function createProductCard(p, i) {
     }
 
     function renderDeliveries() {
-        // Construir mapa de compradora -> { total, items }
+        // Construir mapa de compradora -> { total, items, images }
         const buyerMap = {};
         products.forEach(p => {
             if (!p.compradora) return;
             const name = p.compradora.trim();
-            if (!buyerMap[name]) buyerMap[name] = { total: 0, items: [] };
+            if (!buyerMap[name]) buyerMap[name] = { total: 0, items: [], images: [] };
             buyerMap[name].total += parseFloat(p.price) || 0;
-            buyerMap[name].items.push(p.name);
+            buyerMap[name].items.push({ name: p.name, price: p.price });
+            if (p.image) buyerMap[name].images.push({ src: p.image, name: p.name });
         });
 
         const buyerNames = Object.keys(buyerMap).sort((a, b) => a.localeCompare(b, 'es'));
@@ -2594,7 +2595,11 @@ function createProductCard(p, i) {
             return name.toLowerCase().includes(term);
         });
 
-        // Calcular métricas rápidas
+        // Ocultar métricas si hay búsqueda activa (libera espacio en móvil)
+        const statsGrid = deliveriesView ? deliveriesView.querySelector('.summary-stats-grid') : null;
+        if (statsGrid) statsGrid.style.display = term ? 'none' : '';
+
+        // Calcular métricas rápidas (siempre sobre todos, no el filtrado)
         let totalMoney = 0;
         let paidCount = 0;
         let pendingMoney = 0;
@@ -2638,18 +2643,26 @@ function createProductCard(p, i) {
             const statusLabel = isPagado ? 'Pagado' : 'Pendiente';
             const paymentDisabledClass = isPagado ? '' : 'disabled';
 
+            // Galería de imágenes en miniatura
+            const imagesHtml = buyerData.images.length > 0
+                ? `<div class="delivery-images-strip">${buyerData.images.map(img =>
+                    `<img class="delivery-thumb" src="${img.src}" alt="${escHtml(img.name)}" title="${escHtml(img.name)}">`
+                  ).join('')}</div>`
+                : '';
+
             const row = document.createElement('div');
             row.className = 'delivery-row';
             row.dataset.compradora = name;
 
             row.innerHTML = `
                 <div class="delivery-buyer-info">
+                    ${imagesHtml}
                     <div class="delivery-buyer-name">
                         <i data-lucide="user"></i>
                         ${escHtml(name)}
                     </div>
                     <div class="delivery-buyer-total">$${buyerData.total.toFixed(2)}</div>
-                    <div class="delivery-buyer-items-hint">${buyerData.items.length} prenda${buyerData.items.length !== 1 ? 's' : ''}: ${buyerData.items.map(escHtml).join(', ')}</div>
+                    <div class="delivery-buyer-items-hint">${buyerData.items.length} prenda${buyerData.items.length !== 1 ? 's' : ''}: ${buyerData.items.map(i => escHtml(i.name)).join(', ')}</div>
                 </div>
                 <div class="delivery-controls">
                     <div class="delivery-place-selector">

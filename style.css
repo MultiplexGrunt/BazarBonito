@@ -2630,6 +2630,32 @@ kbd.kbd-hint {
     margin-top: 3px;
 }
 
+/* Tira de imágenes en miniatura por compradora */
+.delivery-images-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.delivery-thumb {
+    width: 52px;
+    height: 52px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-input);
+    transition: transform 0.18s, box-shadow 0.18s;
+    cursor: zoom-in;
+}
+
+.delivery-thumb:hover {
+    transform: scale(1.12);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    z-index: 2;
+    position: relative;
+}
+
 /* Controles de entrega en fila flexible */
 .delivery-controls {
     flex: 3;
