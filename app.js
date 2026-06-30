@@ -168,6 +168,37 @@ const db = {
         }
     },
 
+    async saveProduct(listId, product) {
+        try {
+            await setDoc(doc(firestoreDb, "listas", listId, "productos", product.id), product);
+        } catch (err) {
+            console.error("Error al guardar producto atómicamente:", err);
+            throw err;
+        }
+    },
+
+    async deleteProduct(listId, productId) {
+        try {
+            await deleteDoc(doc(firestoreDb, "listas", listId, "productos", productId));
+        } catch (err) {
+            console.error("Error al eliminar producto atómicamente:", err);
+            throw err;
+        }
+    },
+
+    async updateListMetadata(listId, name) {
+        try {
+            const listRef = doc(firestoreDb, "listas", listId);
+            await setDoc(listRef, {
+                id: listId,
+                name: name,
+                updatedAt: new Date().toISOString()
+            }, { merge: true });
+        } catch (err) {
+            console.error("Error al actualizar metadata de lista:", err);
+        }
+    },
+
     async getConfig(key) {
         return localStorage.getItem(`bonitobazar_${key}`);
     },
@@ -858,8 +889,15 @@ addForm.addEventListener('submit', e => {
         ],
     };
 
+    // Actualización optimista local
     products.unshift(product);
-    saveToStorage();
+    const activeList = lists.find(l => l.id === activeListId);
+    if (activeList) activeList.products = products;
+
+    // Guardado atómico en la nube
+    db.saveProduct(activeListId, product)
+        .then(() => db.updateListMetadata(activeListId, activeList ? activeList.name : ''))
+        .catch(err => showToast('error', 'Error al guardar en la nube: ' + err.message));
 
     // Resetear y cerrar formulario
     closeForm();
@@ -1366,7 +1404,7 @@ editForm.addEventListener('submit', e => {
         });
     }
 
-    products[idx] = {
+    const updatedProduct = {
         ...products[idx],
         name,
         price: newPrice,
@@ -1376,7 +1414,16 @@ editForm.addEventListener('submit', e => {
         priceHistory: updatedHistory,
     };
 
-    saveToStorage();
+    // Actualización optimista local
+    products[idx] = updatedProduct;
+    const activeList = lists.find(l => l.id === activeListId);
+    if (activeList) activeList.products = products;
+
+    // Guardado atómico en la nube
+    db.saveProduct(activeListId, updatedProduct)
+        .then(() => db.updateListMetadata(activeListId, activeList ? activeList.name : ''))
+        .catch(err => showToast('error', 'Error al guardar cambios: ' + err.message));
+
     closeEditModal();
     renderProducts();
     showToast('success', 'Cambios guardados.');
@@ -1477,8 +1524,17 @@ btnDeleteProduct.addEventListener('click', () => {
     const p = products.find(x => x.id === id);
     if (!p) return;
     if (!confirm(`¿Eliminar "${p.name}" de la lista?`)) return;
+
+    // Actualización optimista local
     products = products.filter(x => x.id !== id);
-    saveToStorage();
+    const activeList = lists.find(l => l.id === activeListId);
+    if (activeList) activeList.products = products;
+
+    // Eliminación atómica en la nube
+    db.deleteProduct(activeListId, id)
+        .then(() => db.updateListMetadata(activeListId, activeList ? activeList.name : ''))
+        .catch(err => showToast('error', 'Error al eliminar el producto en la nube: ' + err.message));
+
     closeEditModal();
     renderProducts();
     updateCount();
