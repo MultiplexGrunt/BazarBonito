@@ -105,11 +105,16 @@ const db = {
             await Promise.all(deletePromises);
             
             // Subir las listas restauradas secuencialmente
-            // Esto evita que el pipeline del SDK de Firestore intente agrupar las escrituras
-            // de las imágenes base64 en una sola petición masiva que supere el límite de payload.
+            // Introducimos un delay de 2.2 segundos y notificaciones de progreso entre listas
+            // para obligar al SDK de Firestore a enviar cada documento de forma aislada,
+            // rompiendo cualquier intento de agrupación de red que exceda el tamaño de payload.
+            let i = 1;
             for (const lista of listsArray) {
+                showToast('info', `Subiendo a la nube: Lista ${i} de ${listsArray.length}...`);
                 const docRef = doc(firestoreDb, "listas", lista.id);
                 await setDoc(docRef, lista);
+                await new Promise(resolve => setTimeout(resolve, 2200));
+                i++;
             }
             
             if (activeId) {
