@@ -20,4 +20,6 @@ yarn-error.log*
 .logs/
 node_modules/
 backup.json
+gemini.exe
+
 
