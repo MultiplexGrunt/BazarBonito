@@ -8,7 +8,8 @@ import {
     getDocs,
     setDoc,
     deleteDoc,
-    writeBatch
+    writeBatch,
+    onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import {
     getAuth,
@@ -54,6 +55,46 @@ let activeListId = null;       // ID de la lista activa
 let products = [];             // productos de la lista activa
 let pendingImage = null;       // imagen capturada esperando ser guardada
 let editingImageBase64 = null; // imagen en el modal de edición
+let unsubscribeActiveList = null; // función para desvincular el listener en tiempo real
+
+/**
+ * Escucha los productos de la lista activa en tiempo real desde Firestore
+ */
+function listenToActiveListProducts() {
+    if (unsubscribeActiveList) {
+        unsubscribeActiveList();
+        unsubscribeActiveList = null;
+    }
+
+    if (!activeListId) return;
+
+    unsubscribeActiveList = onSnapshot(
+        collection(firestoreDb, "listas", activeListId, "productos"),
+        (snapshot) => {
+            const updatedProducts = [];
+            snapshot.forEach(doc => {
+                updatedProducts.push(doc.data());
+            });
+            // Ordenar ascendente por fecha de creación para preservar el orden original
+            updatedProducts.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+            
+            products = updatedProducts;
+            
+            // Sincronizar en el array general de listas
+            const activeList = lists.find(l => l.id === activeListId);
+            if (activeList) {
+                activeList.products = products;
+            }
+            
+            // Forzar renderizado de la UI
+            renderProducts();
+            updateCount();
+        },
+        (err) => {
+            console.error("Error en listener en tiempo real de Firestore:", err);
+        }
+    );
+}
 
 // ── BASE DE DATOS (Firebase Firestore con Subcolecciones) ──────
 const db = {
@@ -1518,12 +1559,11 @@ async function selectList(id) {
     await db.saveConfig('activeListId', activeListId);
 
     const activeList = lists.find(l => l.id === activeListId);
-    products = activeList ? activeList.products : [];
-
     activeListName.textContent = activeList ? activeList.name : 'Sin nombre';
 
-    renderProducts();
-    updateCount();
+    // Iniciar listener de productos en tiempo real para esta nueva lista
+    listenToActiveListProducts();
+
     showToast('success', `Cargada la lista: “${activeList ? activeList.name : ''}”`);
 }
 
@@ -1617,11 +1657,11 @@ btnDeleteList.addEventListener('click', async () => {
         await db.saveConfig('activeListId', activeListId);
 
         const activeListObj = lists[0];
-        products = activeListObj.products;
         activeListName.textContent = activeListObj.name;
 
-        renderProducts();
-        updateCount();
+        // Iniciar el listener de la nueva lista seleccionada
+        listenToActiveListProducts();
+        
         showToast('success', 'Lista eliminada correctamente.');
     } catch (err) {
         showToast('error', 'Error al eliminar la lista: ' + err.message);
@@ -1657,12 +1697,11 @@ promptForm.addEventListener('submit', async (e) => {
             lists.push(newList);
             activeListId = newList.id;
             await db.saveConfig('activeListId', activeListId);
-            products = [];
             activeListName.textContent = val;
 
             closePromptModal();
-            renderProducts();
-            updateCount();
+            // Iniciar listener en tiempo real de la nueva lista
+            listenToActiveListProducts();
             showToast('success', `Lista “${val}” creada.`);
         } catch (err) {
             showToast('error', 'Error al guardar la nueva lista: ' + err.message);
@@ -2319,12 +2358,14 @@ async function init() {
         // Cargar nombre de la lista activa en la UI
         const activeList = lists.find(l => l.id === activeListId);
         activeListName.textContent = activeList ? activeList.name : 'Lista Principal';
+        
+        // Iniciar la escucha en tiempo real de productos
+        listenToActiveListProducts();
     } catch (err) {
         showToast('error', 'Error al inicializar la base de datos.');
+        renderProducts();
+        updateCount();
     }
-
-    renderProducts();
-    updateCount();
 
     // Inicializar listeners del scroll flotante
     window.addEventListener('scroll', updateScrollButton);
