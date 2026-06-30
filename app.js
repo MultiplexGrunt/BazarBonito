@@ -104,13 +104,13 @@ const db = {
             });
             await Promise.all(deletePromises);
             
-            // Subir las listas restauradas en paralelo
-            const savePromises = [];
-            listsArray.forEach((lista) => {
+            // Subir las listas restauradas secuencialmente
+            // Esto evita que el pipeline del SDK de Firestore intente agrupar las escrituras
+            // de las imágenes base64 en una sola petición masiva que supere el límite de payload.
+            for (const lista of listsArray) {
                 const docRef = doc(firestoreDb, "listas", lista.id);
-                savePromises.push(setDoc(docRef, lista));
-            });
-            await Promise.all(savePromises);
+                await setDoc(docRef, lista);
+            }
             
             if (activeId) {
                 await this.saveConfig('activeListId', activeId);
