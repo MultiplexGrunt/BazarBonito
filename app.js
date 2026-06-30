@@ -38,10 +38,9 @@ let products = [];             // productos de la lista activa
 let pendingImage = null;       // imagen capturada esperando ser guardada
 let editingImageBase64 = null; // imagen en el modal de edición
 
-// ── BASE DE DATOS (Firebase Firestore) ────────────────────────
+// ── BASE DE DATOS (Firebase Firestore con Subcolecciones) ──────
 const db = {
     async open() {
-        // Firestore se abre de forma transparente
         return true;
     },
 
@@ -49,10 +48,23 @@ const db = {
         try {
             const querySnapshot = await getDocs(collection(firestoreDb, "listas"));
             const fetchedLists = [];
-            querySnapshot.forEach((doc) => {
-                fetchedLists.push(doc.data());
-            });
-            // Ordenar de más antiguas a más nuevas para mantener consistencia
+            
+            for (const d of querySnapshot.docs) {
+                const listaData = d.data();
+                // Cargar los productos correspondientes desde su subcolección
+                const prodSnapshot = await getDocs(collection(firestoreDb, "listas", d.id, "productos"));
+                const prodList = [];
+                prodSnapshot.forEach((pDoc) => {
+                    prodList.push(pDoc.data());
+                });
+                // Ordenar los productos por fecha de creación (de más recientes a más antiguos)
+                prodList.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                
+                listaData.products = prodList;
+                fetchedLists.push(listaData);
+            }
+            
+            // Ordenar listas de más antiguas a más nuevas
             fetchedLists.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
             return fetchedLists;
         } catch (err) {
@@ -63,8 +75,16 @@ const db = {
 
     async saveList(lista) {
         try {
+            const { products: listProducts, ...listaMeta } = lista;
             const docRef = doc(firestoreDb, "listas", lista.id);
-            await setDoc(docRef, lista);
+            await setDoc(docRef, listaMeta);
+            
+            // Si la lista trae productos (por ejemplo, en migraciones), guardarlos individualmente
+            if (Array.isArray(listProducts)) {
+                for (const prod of listProducts) {
+                    await setDoc(doc(firestoreDb, "listas", lista.id, "productos", prod.id), prod);
+                }
+            }
         } catch (err) {
             console.error("Error al guardar lista en Firestore:", err);
             throw err;
@@ -73,6 +93,15 @@ const db = {
 
     async deleteList(id) {
         try {
+            // Eliminar primero todos los productos en la subcolección
+            const prodSnapshot = await getDocs(collection(firestoreDb, "listas", id, "productos"));
+            const deletePromises = [];
+            prodSnapshot.forEach((pDoc) => {
+                deletePromises.push(deleteDoc(doc(firestoreDb, "listas", id, "productos", pDoc.id)));
+            });
+            await Promise.all(deletePromises);
+            
+            // Eliminar el documento de la lista
             const docRef = doc(firestoreDb, "listas", id);
             await deleteDoc(docRef);
         } catch (err) {
@@ -95,26 +124,34 @@ const db = {
 
     async restoreBackup(listsArray, activeId) {
         try {
+            // Obtener todas las listas actuales para borrarlas con sus subcolecciones
             const querySnapshot = await getDocs(collection(firestoreDb, "listas"));
+            for (const d of querySnapshot.docs) {
+                await this.deleteList(d.id);
+            }
             
-            // Eliminar todas las listas de Firestore en paralelo
-            const deletePromises = [];
-            querySnapshot.forEach((d) => {
-                deletePromises.push(deleteDoc(doc(firestoreDb, "listas", d.id)));
-            });
-            await Promise.all(deletePromises);
-            
-            // Subir las listas restauradas secuencialmente
-            // Introducimos un delay de 2.2 segundos y notificaciones de progreso entre listas
-            // para obligar al SDK de Firestore a enviar cada documento de forma aislada,
-            // rompiendo cualquier intento de agrupación de red que exceda el tamaño de payload.
-            let i = 1;
+            // Subir las nuevas listas y sus productos uno a uno
+            let lIdx = 1;
             for (const lista of listsArray) {
-                showToast('info', `Subiendo a la nube: Lista ${i} de ${listsArray.length}...`);
+                const { products: listProducts, ...listaMeta } = lista;
+                showToast('info', `Restaurando lista ${lIdx} de ${listsArray.length}...`);
+                
+                // Guardar la metadata de la lista
                 const docRef = doc(firestoreDb, "listas", lista.id);
-                await setDoc(docRef, lista);
-                await new Promise(resolve => setTimeout(resolve, 2200));
-                i++;
+                await setDoc(docRef, listaMeta);
+                
+                // Guardar cada producto individualmente de forma secuencial en su subcolección
+                if (Array.isArray(listProducts)) {
+                    let pIdx = 1;
+                    for (const prod of listProducts) {
+                        showToast('info', `Restaurando: Lista ${lIdx}/${listsArray.length} (Prenda ${pIdx}/${listProducts.length})...`);
+                        await setDoc(doc(firestoreDb, "listas", lista.id, "productos", prod.id), prod);
+                        // Delay mínimo de 80ms para evitar saturación del WebChannel
+                        await new Promise(resolve => setTimeout(resolve, 80));
+                        pIdx++;
+                    }
+                }
+                lIdx++;
             }
             
             if (activeId) {
@@ -218,7 +255,25 @@ async function saveToStorage() {
         if (activeList) {
             activeList.products = products;
             activeList.updatedAt = new Date().toISOString();
-            await db.saveList(activeList);
+            
+            // Guardar la metadata de la lista activa
+            const { products: listProducts, ...listaMeta } = activeList;
+            await setDoc(doc(firestoreDb, "listas", activeListId), listaMeta);
+            
+            // Sincronizar productos en la subcolección de forma individual
+            if (Array.isArray(listProducts)) {
+                for (const prod of listProducts) {
+                    await setDoc(doc(firestoreDb, "listas", activeListId, "productos", prod.id), prod);
+                }
+            }
+            
+            // Eliminar de Firestore los productos que ya no existen en la lista local en memoria (eliminados)
+            const prodSnapshot = await getDocs(collection(firestoreDb, "listas", activeListId, "productos"));
+            for (const pDoc of prodSnapshot.docs) {
+                if (!products.some(p => p.id === pDoc.id)) {
+                    await deleteDoc(doc(firestoreDb, "listas", activeListId, "productos", pDoc.id));
+                }
+            }
         }
     } catch (err) {
         showToast('error', 'Error al guardar en la nube (Firestore).');
