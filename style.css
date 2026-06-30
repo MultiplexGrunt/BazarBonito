@@ -1230,9 +1230,6 @@ kbd.kbd-hint {
     .app-shell { padding: 0 12px; }
     .app-header { gap: 8px; }
     .badge-count { display: none; }
-    .card-image { width: 90px; height: 72px; }
-    .card-name  { font-size: 0.85rem; }
-    .card-price { font-size: 1.1rem; }
     .add-form-layout { flex-direction: column; }
     .form-image-side, .mini-dropzone, .form-image-preview { width: 100%; }
     .form-panel.open { max-height: 650px; }
@@ -1605,13 +1602,6 @@ kbd.kbd-hint {
     font-size: 0.75rem;
     font-weight: 700;
     color: var(--text-1);
-}
-
-.products-column-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    min-height: 150px;
 }
 
 /* Indicador vacío sutil dentro de las columnas */
