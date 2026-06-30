@@ -442,23 +442,53 @@ function updateRoleUI() {
         }
     }
 
-    // 2. Botón de cerrar sesión en el header
+    // 2. Alternar clases de rol en el body
+    if (isAdmin) {
+        document.body.classList.add('is-admin');
+        document.body.classList.remove('is-visitor');
+    } else {
+        document.body.classList.add('is-visitor');
+        document.body.classList.remove('is-admin');
+    }
+
+    // 3. Deshabilitar/Habilitar visualmente el select de listas
+    if (btnListSelect) {
+        if (isAdmin) {
+            btnListSelect.classList.remove('disabled');
+            btnListSelect.removeAttribute('aria-disabled');
+        } else {
+            btnListSelect.classList.add('disabled');
+            btnListSelect.setAttribute('aria-disabled', 'true');
+        }
+    }
+
+    // 4. Mostrar/Ocultar totales de dinero en las columnas
+    const totalAvailEl = document.getElementById('total-price-available');
+    const totalSoldEl = document.getElementById('total-price-sold');
+    if (totalAvailEl) {
+        totalAvailEl.style.display = isAdmin ? 'inline-block' : 'none';
+    }
+    if (totalSoldEl) {
+        totalSoldEl.style.display = isAdmin ? 'inline-block' : 'none';
+    }
+
+    // 5. Botón de cerrar sesión en el header
     if (btnLogout) {
         btnLogout.style.display = isAdmin ? 'inline-flex' : 'none';
     }
 
-    // 3. Botón de agregar producto
+    // 6. Botón de agregar producto
     if (btnToggleForm) {
         btnToggleForm.style.display = isAdmin ? 'inline-flex' : 'none';
     }
 
-    // 4. Selector de herramientas administrativas (engranaje)
+    // 7. Selector de herramientas administrativas (engranaje)
     const toolsContainer = document.querySelector('.tools-selector-container');
     if (toolsContainer) {
         toolsContainer.style.display = isAdmin ? 'inline-flex' : 'none';
     }
 
-    // 5. Botones de acción administrativa en el menú de listas
+    // 8. Botones de acción administrativa en el menú de listas
     const dropdownActions = document.querySelector('.dropdown-actions');
     if (dropdownActions) {
         dropdownActions.style.display = isAdmin ? 'flex' : 'none';
@@ -468,7 +498,7 @@ function updateRoleUI() {
         dropdownDivider.style.display = isAdmin ? 'block' : 'none';
     }
 
-    // 6. Comportamiento interactivo en el modal de edición/detalle de producto
+    // 9. Comportamiento interactivo en el modal de edición/detalle de producto (solo para admin)
     if (editModal && editModal.style.display === 'flex') {
         const titleEl = document.getElementById('edit-modal-title');
         const submitBtn = editForm.querySelector('.btn-save-edit');
@@ -485,6 +515,7 @@ function updateRoleUI() {
             if (overlayImgAction) overlayImgAction.style.display = 'flex';
             if (linkBtnImgAction) linkBtnImgAction.style.display = 'inline-block';
         } else {
+            // Teóricamente inalcanzable ahora que los visitantes no pueden abrir el modal
             if (titleEl) titleEl.textContent = "Detalle del Producto";
             editName.disabled = true;
             editPrice.disabled = true;
@@ -974,16 +1005,23 @@ function createProductCard(p, i) {
         </div>
     `;
 
-    // Hover preview sobre la imagen
-    if (p.image) {
+    // Hover preview sobre la imagen (solo para administrador)
+    if (p.image && isAdmin) {
         const imgDiv = card.querySelector('.card-image');
         imgDiv.addEventListener('mouseenter', e => showHoverPreview(p.image, e));
         imgDiv.addEventListener('mousemove', e => positionHoverPreview(e));
         imgDiv.addEventListener('mouseleave', () => hideHoverPreview());
     }
 
-    card.addEventListener('click', () => openEditModal(p.id));
-    card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openEditModal(p.id); } });
+    card.addEventListener('click', () => {
+        if (isAdmin) openEditModal(p.id);
+    });
+    card.addEventListener('keydown', e => { 
+        if (e.key === 'Enter' || e.key === ' ') { 
+            e.preventDefault(); 
+            if (isAdmin) openEditModal(p.id); 
+        } 
+    });
 
     return card;
 }
@@ -1453,6 +1491,7 @@ function closePromptModal() {
 
 // Eventos de Listas
 btnListSelect.addEventListener('click', (e) => {
+    if (!isAdmin) return; // Bloquear dropdown de listas para visitante
     e.stopPropagation();
     toggleListDropdown();
 });

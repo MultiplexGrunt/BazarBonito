@@ -2313,4 +2313,112 @@ kbd.kbd-hint {
     color: var(--text-3);
 }
 
+/* ── MODIFICACIONES PARA PERFIL DE VISITANTE (SÓLO LECTURA) ── */
+
+/* Select de listas deshabilitado */
+.btn-list-select.disabled {
+    opacity: 0.7;
+    cursor: not-allowed !important;
+    pointer-events: none;
+    background: var(--bg-panel) !important;
+    border-color: var(--border) !important;
+}
+
+/* Catálogo en cuadrícula (Grid) para visitantes */
+.is-visitor .products-column-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+}
+
+.is-visitor .product-card {
+    flex-direction: column;
+    align-items: stretch;
+    height: auto;
+    padding: 0;
+    cursor: default !important; /* Quitar pointer click */
+    border-radius: var(--radius-lg);
+    background: var(--bg-card);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    transition: var(--t);
+}
+
+.is-visitor .product-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(124, 58, 237, 0.25);
+}
+
+[data-theme="light"] .is-visitor .product-card:hover {
+    border-color: rgba(236, 72, 153, 0.25);
+}
+
+.is-visitor .card-image {
+    width: 100%;
+    height: 240px; /* Foto grande y de excelente visibilidad */
+    border-radius: 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.is-visitor .card-image img {
+    border-radius: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.is-visitor .card-image .card-no-image {
+    border-radius: 0;
+    height: 100%;
+}
+
+.is-visitor .card-info {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.is-visitor .card-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-1);
+    white-space: normal; /* Permitir wrap de texto de prendas largas */
+}
+
+.is-visitor .card-price {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--accent-h);
+}
+
+[data-theme="light"] .is-visitor .card-price {
+    color: var(--accent);
+}
+
+.is-visitor .card-compradora-info {
+    font-size: 0.8rem;
+    color: var(--text-2);
+    margin-top: 4px;
+}
+
+/* Adaptación responsive para grilla en dispositivos móviles */
+@media (max-width: 640px) {
+    .is-visitor .products-column-list {
+        grid-template-columns: repeat(2, 1fr); /* Cuadrícula a 2 columnas */
+        gap: 10px;
+    }
+    .is-visitor .card-image {
+        height: 180px; /* Tamaño optimizado de imagen en móviles */
+    }
+    .is-visitor .card-info {
+        padding: 10px;
+    }
+    .is-visitor .card-price {
+        font-size: 1.1rem;
+    }
+}
+
 
