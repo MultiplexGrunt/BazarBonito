@@ -96,20 +96,21 @@ const db = {
     async restoreBackup(listsArray, activeId) {
         try {
             const querySnapshot = await getDocs(collection(firestoreDb, "listas"));
-            const batch = writeBatch(firestoreDb);
             
-            // Eliminar todas las listas de Firestore
+            // Eliminar todas las listas de Firestore en paralelo
+            const deletePromises = [];
             querySnapshot.forEach((d) => {
-                batch.delete(doc(firestoreDb, "listas", d.id));
+                deletePromises.push(deleteDoc(doc(firestoreDb, "listas", d.id)));
             });
+            await Promise.all(deletePromises);
             
-            // Subir las listas restauradas
+            // Subir las listas restauradas en paralelo
+            const savePromises = [];
             listsArray.forEach((lista) => {
                 const docRef = doc(firestoreDb, "listas", lista.id);
-                batch.set(docRef, lista);
+                savePromises.push(setDoc(docRef, lista));
             });
-            
-            await batch.commit();
+            await Promise.all(savePromises);
             
             if (activeId) {
                 await this.saveConfig('activeListId', activeId);
