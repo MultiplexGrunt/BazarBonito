@@ -2478,4 +2478,48 @@ kbd.kbd-hint {
     color: var(--accent);
 }
 
+/* Aura de actualización temporal para las tarjetas */
+.product-card.just-updated {
+    animation: aura-flash-dark 3.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+@keyframes aura-flash-dark {
+    0% {
+        border-color: var(--accent-h);
+        box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.15), 
+                    0 0 20px rgba(124, 58, 237, 0.5);
+    }
+    30% {
+        border-color: var(--accent-h);
+        box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.1), 
+                    0 0 16px rgba(124, 58, 237, 0.35);
+    }
+    100% {
+        border-color: var(--border);
+        box-shadow: none;
+    }
+}
+
+/* Aura para tema claro */
+[data-theme="light"] .product-card.just-updated {
+    animation: aura-flash-light 3.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+@keyframes aura-flash-light {
+    0% {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.15), 
+                    0 0 20px rgba(236, 72, 153, 0.5);
+    }
+    30% {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.1), 
+                    0 0 16px rgba(236, 72, 153, 0.35);
+    }
+    100% {
+        border-color: var(--border);
+        box-shadow: none;
+    }
+}
+
 

@@ -56,6 +56,7 @@ let products = [];             // productos de la lista activa
 let pendingImage = null;       // imagen capturada esperando ser guardada
 let editingImageBase64 = null; // imagen en el modal de edición
 let unsubscribeActiveList = null; // función para desvincular el listener en tiempo real
+let lastUpdatedProductId = null; // ID del producto que se acaba de agregar o actualizar
 
 /**
  * Escucha los productos de la lista activa en tiempo real desde Firestore
@@ -68,10 +69,23 @@ function listenToActiveListProducts() {
 
     if (!activeListId) return;
 
+    let isInitialLoad = true;
+
     unsubscribeActiveList = onSnapshot(
         collection(firestoreDb, "listas", activeListId, "productos"),
         (snapshot) => {
             const updatedProducts = [];
+            
+            // Detectar qué producto cambió si no es la carga inicial
+            if (!isInitialLoad) {
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === 'added' || change.type === 'modified') {
+                        lastUpdatedProductId = change.doc.id;
+                    }
+                });
+            }
+            isInitialLoad = false;
+
             snapshot.forEach(doc => {
                 updatedProducts.push(doc.data());
             });
@@ -1068,15 +1082,19 @@ function renderProducts() {
             const card = createProductCard(p, i);
             productsSold.appendChild(card);
         });
-    }
-
     if (window.lucide) lucide.createIcons();
+
+    // Limpiar el ID después de renderizar para que no brille en futuros filtrados/búsquedas
+    lastUpdatedProductId = null;
 }
 
 // Función auxiliar para generar la tarjeta
 function createProductCard(p, i) {
     const card = document.createElement('article');
     card.className = 'product-card';
+    if (p.id === lastUpdatedProductId) {
+        card.classList.add('just-updated');
+    }
     card.dataset.id = p.id;
     card.setAttribute('tabindex', '0');
     card.setAttribute('aria-label', `Producto: ${escHtml(p.name)}, $${p.price}`);
