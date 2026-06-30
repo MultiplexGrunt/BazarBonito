@@ -21,12 +21,12 @@ import {
 
 // Configuración de Firebase para tu aplicación web
 const firebaseConfig = {
-  apiKey: "AIzaSyAaDWrSWsuED6fDZBAiN_tN2H--UA09TYI",
-  authDomain: "bonitobazar-6adcc.firebaseapp.com",
-  projectId: "bonitobazar-6adcc",
-  storageBucket: "bonitobazar-6adcc.firebasestorage.app",
-  messagingSenderId: "223695169986",
-  appId: "1:223695169986:web:cf55b834ec034042ab0e5b"
+    apiKey: "AIzaSyAaDWrSWsuED6fDZBAiN_tN2H--UA09TYI",
+    authDomain: "bonitobazar-6adcc.firebaseapp.com",
+    projectId: "bonitobazar-6adcc",
+    storageBucket: "bonitobazar-6adcc.firebasestorage.app",
+    messagingSenderId: "223695169986",
+    appId: "1:223695169986:web:cf55b834ec034042ab0e5b"
 };
 
 // Inicializar Firebase
@@ -75,7 +75,7 @@ function listenToActiveListProducts() {
         collection(firestoreDb, "listas", activeListId, "productos"),
         (snapshot) => {
             const updatedProducts = [];
-            
+
             // Detectar qué producto cambió si no es la carga inicial
             if (!isInitialLoad) {
                 snapshot.docChanges().forEach(change => {
@@ -91,15 +91,15 @@ function listenToActiveListProducts() {
             });
             // Ordenar descendente por fecha de creación para mostrar los más nuevos primero
             updatedProducts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            
+
             products = updatedProducts;
-            
+
             // Sincronizar en el array general de listas
             const activeList = lists.find(l => l.id === activeListId);
             if (activeList) {
                 activeList.products = products;
             }
-            
+
             // Forzar renderizado de la UI
             renderProducts();
             updateCount();
@@ -120,7 +120,7 @@ const db = {
         try {
             const querySnapshot = await getDocs(collection(firestoreDb, "listas"));
             const fetchedLists = [];
-            
+
             for (const d of querySnapshot.docs) {
                 const listaData = d.data();
                 // Cargar los productos correspondientes desde su subcolección
@@ -131,11 +131,11 @@ const db = {
                 });
                 // Ordenar los productos por fecha de creación (de más recientes a más antiguos)
                 prodList.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-                
+
                 listaData.products = prodList;
                 fetchedLists.push(listaData);
             }
-            
+
             // Ordenar listas de más antiguas a más nuevas
             fetchedLists.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
             return fetchedLists;
@@ -150,7 +150,7 @@ const db = {
             const { products: listProducts, ...listaMeta } = lista;
             const docRef = doc(firestoreDb, "listas", lista.id);
             await setDoc(docRef, listaMeta);
-            
+
             // Si la lista trae productos (por ejemplo, en migraciones), guardarlos individualmente
             if (Array.isArray(listProducts)) {
                 for (const prod of listProducts) {
@@ -172,7 +172,7 @@ const db = {
                 deletePromises.push(deleteDoc(doc(firestoreDb, "listas", id, "productos", pDoc.id)));
             });
             await Promise.all(deletePromises);
-            
+
             // Eliminar el documento de la lista
             const docRef = doc(firestoreDb, "listas", id);
             await deleteDoc(docRef);
@@ -232,17 +232,17 @@ const db = {
             for (const d of querySnapshot.docs) {
                 await this.deleteList(d.id);
             }
-            
+
             // Subir las nuevas listas y sus productos uno a uno
             let lIdx = 1;
             for (const lista of listsArray) {
                 const { products: listProducts, ...listaMeta } = lista;
                 showToast('info', `Restaurando lista ${lIdx} de ${listsArray.length}...`);
-                
+
                 // Guardar la metadata de la lista
                 const docRef = doc(firestoreDb, "listas", lista.id);
                 await setDoc(docRef, listaMeta);
-                
+
                 // Guardar cada producto individualmente de forma secuencial en su subcolección
                 if (Array.isArray(listProducts)) {
                     let pIdx = 1;
@@ -256,7 +256,7 @@ const db = {
                 }
                 lIdx++;
             }
-            
+
             if (activeId) {
                 await this.saveConfig('activeListId', activeId);
             } else {
@@ -280,11 +280,11 @@ async function migrateIndexedDBToFirestore() {
                 resolve([]);
                 return;
             }
-            
+
             const tx = idbInstance.transaction('listas', 'readonly');
             const store = tx.objectStore('listas');
             const getAllReq = store.getAll();
-            
+
             getAllReq.onsuccess = () => {
                 const localLists = getAllReq.result || [];
                 idbInstance.close();
@@ -359,18 +359,18 @@ async function saveToStorage() {
         if (activeList) {
             activeList.products = products;
             activeList.updatedAt = new Date().toISOString();
-            
+
             // Guardar la metadata de la lista activa
             const { products: listProducts, ...listaMeta } = activeList;
             await setDoc(doc(firestoreDb, "listas", activeListId), listaMeta);
-            
+
             // Sincronizar productos en la subcolección de forma individual
             if (Array.isArray(listProducts)) {
                 for (const prod of listProducts) {
                     await setDoc(doc(firestoreDb, "listas", activeListId, "productos", prod.id), prod);
                 }
             }
-            
+
             // Eliminar de Firestore los productos que ya no existen en la lista local en memoria (eliminados)
             const prodSnapshot = await getDocs(collection(firestoreDb, "listas", activeListId, "productos"));
             for (const pDoc of prodSnapshot.docs) {
@@ -1082,32 +1082,32 @@ function renderProducts() {
             const card = createProductCard(p, i);
             productsSold.appendChild(card);
         });
-    if (window.lucide) lucide.createIcons();
+        if (window.lucide) lucide.createIcons();
 
-    // Limpiar el ID después de renderizar para que no brille en futuros filtrados/búsquedas
-    lastUpdatedProductId = null;
-}
-
-// Función auxiliar para generar la tarjeta
-function createProductCard(p, i) {
-    const card = document.createElement('article');
-    card.className = 'product-card';
-    if (p.id === lastUpdatedProductId) {
-        card.classList.add('just-updated');
+        // Limpiar el ID después de renderizar para que no brille en futuros filtrados/búsquedas
+        lastUpdatedProductId = null;
     }
-    card.dataset.id = p.id;
-    card.setAttribute('tabindex', '0');
-    card.setAttribute('aria-label', `Producto: ${escHtml(p.name)}, $${p.price}`);
 
-    const imgHtml = p.image
-        ? `<img src="${p.image}" alt="${escHtml(p.name)}" loading="lazy">`
-        : `<div class="card-no-image"><i data-lucide="image-off"></i><span>Sin imagen</span></div>`;
+    // Función auxiliar para generar la tarjeta
+    function createProductCard(p, i) {
+        const card = document.createElement('article');
+        card.className = 'product-card';
+        if (p.id === lastUpdatedProductId) {
+            card.classList.add('just-updated');
+        }
+        card.dataset.id = p.id;
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('aria-label', `Producto: ${escHtml(p.name)}, $${p.price}`);
 
-    const compBadge = p.compradora
-        ? `<div class="card-compradora-badge"><i data-lucide="user-check"></i><span>${escHtml(p.compradora)}</span></div>`
-        : '';
+        const imgHtml = p.image
+            ? `<img src="${p.image}" alt="${escHtml(p.name)}" loading="lazy">`
+            : `<div class="card-no-image"><i data-lucide="image-off"></i><span>Sin imagen</span></div>`;
 
-    card.innerHTML = `
+        const compBadge = p.compradora
+            ? `<div class="card-compradora-badge"><i data-lucide="user-check"></i><span>${escHtml(p.compradora)}</span></div>`
+            : '';
+
+        card.innerHTML = `
         <div class="card-image">
             ${imgHtml}
             ${compBadge}
@@ -1119,142 +1119,142 @@ function createProductCard(p, i) {
         </div>
     `;
 
-    // Hover preview sobre la imagen (solo para administrador)
-    if (p.image && isAdmin) {
-        const imgDiv = card.querySelector('.card-image');
-        imgDiv.addEventListener('mouseenter', e => showHoverPreview(p.image, e));
-        imgDiv.addEventListener('mousemove', e => positionHoverPreview(e));
-        imgDiv.addEventListener('mouseleave', () => hideHoverPreview());
-    }
-
-    card.addEventListener('click', () => {
-        if (isAdmin) {
-            openEditModal(p.id);
-        } else {
-            openImagePreview(p);
+        // Hover preview sobre la imagen (solo para administrador)
+        if (p.image && isAdmin) {
+            const imgDiv = card.querySelector('.card-image');
+            imgDiv.addEventListener('mouseenter', e => showHoverPreview(p.image, e));
+            imgDiv.addEventListener('mousemove', e => positionHoverPreview(e));
+            imgDiv.addEventListener('mouseleave', () => hideHoverPreview());
         }
-    });
-    card.addEventListener('keydown', e => { 
-        if (e.key === 'Enter' || e.key === ' ') { 
-            e.preventDefault(); 
+
+        card.addEventListener('click', () => {
             if (isAdmin) {
                 openEditModal(p.id);
             } else {
                 openImagePreview(p);
             }
-        } 
+        });
+        card.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                if (isAdmin) {
+                    openEditModal(p.id);
+                } else {
+                    openImagePreview(p);
+                }
+            }
+        });
+
+        return card;
+    }
+
+    function updateCount() {
+        totalCount.textContent = products.length;
+    }
+
+    // ── BÚSQUEDA ─────────────────────────────────────────────────
+    searchInput.addEventListener('input', () => {
+        searchTerm = searchInput.value;
+        renderProducts();
     });
 
-    return card;
-}
+    summarySearchInput.addEventListener('input', () => {
+        summarySearchTerm = summarySearchInput.value;
+        renderSummaryView();
+    });
 
-function updateCount() {
-    totalCount.textContent = products.length;
-}
+    // Redirección automática de foco a la búsqueda (Type-to-Search)
+    document.addEventListener('keydown', (e) => {
+        // 0. Ignorar si la pantalla de bienvenida de roles está abierta
+        if (welcomeOverlay && welcomeOverlay.style.display === 'flex') {
+            return;
+        }
 
-// ── BÚSQUEDA ─────────────────────────────────────────────────
-searchInput.addEventListener('input', () => {
-    searchTerm = searchInput.value;
-    renderProducts();
-});
+        // 1. Ignorar si el usuario ya está interactuando con un campo de entrada editable
+        const active = document.activeElement;
+        if (active && (
+            active.tagName === 'INPUT' ||
+            active.tagName === 'TEXTAREA' ||
+            active.tagName === 'SELECT' ||
+            active.isContentEditable
+        )) {
+            return;
+        }
 
-summarySearchInput.addEventListener('input', () => {
-    summarySearchTerm = summarySearchInput.value;
-    renderSummaryView();
-});
+        // 2. Ignorar si hay teclas modificadoras presionadas (ej. Ctrl, Alt, Cmd/Meta)
+        if (e.ctrlKey || e.altKey || e.metaKey) {
+            return;
+        }
 
-// Redirección automática de foco a la búsqueda (Type-to-Search)
-document.addEventListener('keydown', (e) => {
-    // 0. Ignorar si la pantalla de bienvenida de roles está abierta
-    if (welcomeOverlay && welcomeOverlay.style.display === 'flex') {
-        return;
-    }
+        // 3. Ignorar teclas especiales y de control que no producen caracteres legibles
+        if (e.key.length !== 1) {
+            return;
+        }
 
-    // 1. Ignorar si el usuario ya está interactuando con un campo de entrada editable
-    const active = document.activeElement;
-    if (active && (
-        active.tagName === 'INPUT' ||
-        active.tagName === 'TEXTAREA' ||
-        active.tagName === 'SELECT' ||
-        active.isContentEditable
-    )) {
-        return;
-    }
+        // 4. Ignorar si hay formularios o diálogos interactivos de datos en primer plano
+        if (editModal && editModal.style.display === 'flex') {
+            return;
+        }
+        if (promptModal && promptModal.style.display === 'flex') {
+            return;
+        }
+        if (formPanel && formPanel.classList.contains('open')) {
+            return;
+        }
 
-    // 2. Ignorar si hay teclas modificadoras presionadas (ej. Ctrl, Alt, Cmd/Meta)
-    if (e.ctrlKey || e.altKey || e.metaKey) {
-        return;
-    }
+        // 5. Determinar el input de búsqueda destino según el contexto visual actual
+        let targetInput = null;
+        if (summaryView && summaryView.style.display === 'flex') {
+            targetInput = summarySearchInput;
+        } else {
+            targetInput = searchInput;
+        }
 
-    // 3. Ignorar teclas especiales y de control que no producen caracteres legibles
-    if (e.key.length !== 1) {
-        return;
-    }
+        // 6. Asignar el foco al input para que el carácter se escriba de manera nativa
+        if (targetInput) {
+            targetInput.focus();
+        }
+    });
 
-    // 4. Ignorar si hay formularios o diálogos interactivos de datos en primer plano
-    if (editModal && editModal.style.display === 'flex') {
-        return;
-    }
-    if (promptModal && promptModal.style.display === 'flex') {
-        return;
-    }
-    if (formPanel && formPanel.classList.contains('open')) {
-        return;
-    }
+    // ── MODAL DE EDICIÓN ─────────────────────────────────────────
+    function renderPriceHistory(product) {
+        const list = document.getElementById('price-history-list');
+        const history = product.priceHistory || [];
 
-    // 5. Determinar el input de búsqueda destino según el contexto visual actual
-    let targetInput = null;
-    if (summaryView && summaryView.style.display === 'flex') {
-        targetInput = summarySearchInput;
-    } else {
-        targetInput = searchInput;
-    }
+        if (history.length === 0) {
+            list.innerHTML = '<p class="ph-empty">Sin historial registrado.</p>';
+            return;
+        }
 
-    // 6. Asignar el foco al input para que el carácter se escriba de manera nativa
-    if (targetInput) {
-        targetInput.focus();
-    }
-});
+        // Mostrar del más reciente al más antiguo
+        const reversed = [...history].reverse();
 
-// ── MODAL DE EDICIÓN ─────────────────────────────────────────
-function renderPriceHistory(product) {
-    const list = document.getElementById('price-history-list');
-    const history = product.priceHistory || [];
+        list.innerHTML = reversed.map((entry, i) => {
+            const isCurrent = i === 0;
+            const isBase = entry.isBase && history.length > 0 && entry === history[0];
+            const d = new Date(entry.timestamp);
+            const dateStr = d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+                + ' ' + d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 
-    if (history.length === 0) {
-        list.innerHTML = '<p class="ph-empty">Sin historial registrado.</p>';
-        return;
-    }
+            const compHTML = entry.compradora
+                ? `<span class="ph-comp"><i data-lucide="user-check"></i>${escHtml(entry.compradora)}</span>`
+                : ``;
 
-    // Mostrar del más reciente al más antiguo
-    const reversed = [...history].reverse();
+            const badgeHTML = isCurrent
+                ? `<span class="ph-badge badge-current">Actual</span>`
+                : ``;
 
-    list.innerHTML = reversed.map((entry, i) => {
-        const isCurrent = i === 0;
-        const isBase = entry.isBase && history.length > 0 && entry === history[0];
-        const d = new Date(entry.timestamp);
-        const dateStr = d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
-            + ' ' + d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-
-        const compHTML = entry.compradora
-            ? `<span class="ph-comp"><i data-lucide="user-check"></i>${escHtml(entry.compradora)}</span>`
-            : ``;
-
-        const badgeHTML = isCurrent
-            ? `<span class="ph-badge badge-current">Actual</span>`
-            : ``;
-
-        const revertBtn = (!isCurrent && isAdmin)
-            ? `<button type="button" class="btn-revert"
+            const revertBtn = (!isCurrent && isAdmin)
+                ? `<button type="button" class="btn-revert"
                    data-price="${escHtml(entry.price)}"
                    data-comp="${escHtml(entry.compradora || '')}">
                    <i data-lucide="corner-up-left"></i> Usar
                </button>`
-            : '';
+                : '';
 
-        const classes = ['ph-entry', isCurrent ? 'current' : '', isBase && !isCurrent ? 'is-base' : ''].filter(Boolean).join(' ');
+            const classes = ['ph-entry', isCurrent ? 'current' : '', isBase && !isCurrent ? 'is-base' : ''].filter(Boolean).join(' ');
 
-        return `
+            return `
             <div class="${classes}">
                 <span class="ph-price">$${escHtml(entry.price)}</span>
                 ${compHTML}
@@ -1263,900 +1263,900 @@ function renderPriceHistory(product) {
                 ${revertBtn}
             </div>
         `;
-    }).join('');
+        }).join('');
 
-    if (window.lucide) lucide.createIcons();
+        if (window.lucide) lucide.createIcons();
 
-    // Eventos del botón "Usar"
-    list.querySelectorAll('.btn-revert').forEach(btn => {
-        btn.addEventListener('click', () => {
-            editPrice.value = btn.dataset.price;
-            editCompradora.value = btn.dataset.comp;
-            editPrice.focus();
-            editPrice.select();
-            showToast('success', `Precio revertido a $${btn.dataset.price}. Presiona Enter para guardar.`);
-        });
-    });
-}
-
-function openEditModal(id) {
-    const p = products.find(x => x.id === id);
-    if (!p) return;
-
-    editId.value = id;
-    editName.value = p.name;
-    editPrice.value = p.price;
-    editCompradora.value = p.compradora || '';
-    editingImageBase64 = p.image;
-
-    if (p.image) {
-        editPreviewImg.src = p.image;
-        editImageContainer.style.display = 'block';
-        editNoImage.style.display = 'none';
-    } else {
-        editImageContainer.style.display = 'none';
-        editNoImage.style.display = 'flex';
-    }
-
-    // Renderizar historial (tomará en cuenta isAdmin)
-    renderPriceHistory(p);
-
-    editModal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-    
-    // Aplicar adaptaciones visuales de rol al modal
-    updateRoleUI();
-    
-    if (window.lucide) lucide.createIcons();
-
-    // Foco condicional: solo para el administrador
-    if (isAdmin) {
-        setTimeout(() => {
-            if (p.compradora) {
+        // Eventos del botón "Usar"
+        list.querySelectorAll('.btn-revert').forEach(btn => {
+            btn.addEventListener('click', () => {
+                editPrice.value = btn.dataset.price;
+                editCompradora.value = btn.dataset.comp;
                 editPrice.focus();
                 editPrice.select();
-            } else {
-                editCompradora.focus();
-                editCompradora.select();
-            }
-        }, 80);
-    }
-}
-
-function closeEditModal() {
-    editModal.style.display = 'none';
-    document.body.style.overflow = '';
-    editingImageBase64 = null;
-}
-
-// ── MODAL VISTA PREVIA DE IMAGEN (VISITANTE) ──
-function openImagePreview(p) {
-    if (!p.image) {
-        showToast('info', 'Esta prenda no cuenta con una imagen.');
-        return;
-    }
-    imagePreviewImg.src = p.image;
-    imagePreviewTitle.textContent = p.name;
-    imagePreviewPrice.textContent = `$${p.price}`;
-    
-    // Obtener la hora aproximada de subasta (12 horas AM/PM) sin fecha
-    let timeStr = '--:--';
-    if (p.createdAt) {
-        const d = new Date(p.createdAt);
-        timeStr = d.toLocaleTimeString('es-ES', { hour: 'numeric', minute: '2-digit', hour12: true });
-        timeStr = timeStr.replace(/a\.\s*m\./i, 'AM').replace(/p\.\s*m\./i, 'PM').replace(/am/i, 'AM').replace(/pm/i, 'PM');
-    }
-    if (imagePreviewTime) {
-        imagePreviewTime.innerHTML = `<i data-lucide="clock" style="width: 12px; height: 12px; flex-shrink:0;"></i> Subido a las ${timeStr}`;
-    }
-    
-    imagePreviewModal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-    if (window.lucide) lucide.createIcons();
-}
-
-function closeImagePreview() {
-    imagePreviewModal.style.display = 'none';
-    document.body.style.overflow = '';
-    imagePreviewImg.src = '';
-}
-
-btnCloseModal.addEventListener('click', closeEditModal);
-editModal.addEventListener('click', e => { if (e.target === editModal) closeEditModal(); });
-
-if (btnCloseImagePreview) {
-    btnCloseImagePreview.addEventListener('click', closeImagePreview);
-}
-if (imagePreviewModal) {
-    imagePreviewModal.addEventListener('click', e => { if (e.target === imagePreviewModal) closeImagePreview(); });
-}
-if (imagePreviewTime) {
-    imagePreviewTime.addEventListener('click', () => {
-        if (WHATSAPP_GROUP_URL) {
-            window.open(WHATSAPP_GROUP_URL, '_blank');
-        }
-    });
-}
-
-document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-        if (editModal.style.display === 'flex') closeEditModal();
-        if (imagePreviewModal.style.display === 'flex') closeImagePreview();
-    }
-});
-
-// Guardar edición (también con Enter)
-editForm.addEventListener('submit', e => {
-    e.preventDefault();
-
-    const name = editName.value.trim();
-    const price = editPrice.value;
-
-    let valid = true;
-    if (!name) { editName.classList.add('invalid'); valid = false; }
-    else { editName.classList.remove('invalid'); }
-    if (!price || isNaN(parseFloat(price)) || parseFloat(price) < 0) {
-        editPrice.classList.add('invalid'); valid = false;
-    } else { editPrice.classList.remove('invalid'); }
-    if (!valid) return;
-
-    const idx = products.findIndex(x => x.id === editId.value);
-    if (idx === -1) return;
-
-    const newPrice = fmtPrice(price);
-    const newComp = editCompradora.value.trim();
-    const lastEntry = (products[idx].priceHistory || []).slice(-1)[0];
-    const priceChanged = !lastEntry || lastEntry.price !== newPrice || lastEntry.compradora !== newComp;
-
-    const updatedHistory = products[idx].priceHistory
-        ? [...products[idx].priceHistory]
-        : [{ price: products[idx].price, compradora: products[idx].compradora || '', timestamp: products[idx].createdAt, isBase: true }];
-
-    if (priceChanged) {
-        updatedHistory.push({
-            price: newPrice,
-            compradora: newComp,
-            timestamp: new Date().toISOString(),
-            isBase: false,
+                showToast('success', `Precio revertido a $${btn.dataset.price}. Presiona Enter para guardar.`);
+            });
         });
     }
 
-    const updatedProduct = {
-        ...products[idx],
-        name,
-        price: newPrice,
-        compradora: newComp,
-        image: editingImageBase64,
-        updatedAt: new Date().toISOString(),
-        priceHistory: updatedHistory,
-    };
+    function openEditModal(id) {
+        const p = products.find(x => x.id === id);
+        if (!p) return;
 
-    // Actualización optimista local
-    products[idx] = updatedProduct;
-    const activeList = lists.find(l => l.id === activeListId);
-    if (activeList) activeList.products = products;
+        editId.value = id;
+        editName.value = p.name;
+        editPrice.value = p.price;
+        editCompradora.value = p.compradora || '';
+        editingImageBase64 = p.image;
 
-    // Guardado atómico en la nube
-    db.saveProduct(activeListId, updatedProduct)
-        .then(() => db.updateListMetadata(activeListId, activeList ? activeList.name : ''))
-        .catch(err => showToast('error', 'Error al guardar cambios: ' + err.message));
-
-    closeEditModal();
-    renderProducts();
-    showToast('success', 'Cambios guardados.');
-});
-
-// Enter en los inputs del modal envía el formulario
-[editName, editPrice, editCompradora].forEach(input => {
-    input.addEventListener('keydown', e => {
-        if (e.key === 'Enter') { e.preventDefault(); editForm.requestSubmit(); }
-    });
-    input.addEventListener('input', (e) => {
-        input.classList.remove('invalid');
-        if (input !== editPrice) {
-            handleAutocapitalize(e);
-        }
-    });
-});
-
-// Registrar autocapitalización en el prompt input
-if (promptInput) {
-    promptInput.addEventListener('input', handleAutocapitalize);
-}
-
-// Autocompletado del campo de Compradoras con Tab/Enter nativo
-function getAllBuyers() {
-    const buyers = new Set();
-    lists.forEach(l => {
-        if (Array.isArray(l.products)) {
-            l.products.forEach(p => {
-                if (p.compradora && p.compradora.trim() !== '') {
-                    buyers.add(p.compradora.trim());
-                }
-            });
-        }
-    });
-    return Array.from(buyers);
-}
-
-function cleanText(text) {
-    return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-}
-
-editCompradora.addEventListener('input', (e) => {
-    // 1. Aplicar autocapitalización primero (resguardando selección de cursor)
-    const startPos = editCompradora.selectionStart;
-    const endPos = editCompradora.selectionEnd;
-    const originalValue = editCompradora.value;
-    const capitalizedValue = capitalizeWords(originalValue);
-
-    if (originalValue !== capitalizedValue) {
-        editCompradora.value = capitalizedValue;
-        editCompradora.setSelectionRange(startPos, endPos);
-    }
-
-    const inputVal = editCompradora.value;
-    if (!inputVal) return;
-
-    // Si es un borrado, no auto-completar de inmediato
-    if (e.inputType && e.inputType.startsWith('delete')) return;
-
-    const buyers = getAllBuyers();
-    const cleanInput = cleanText(inputVal);
-    const match = buyers.find(b => cleanText(b).startsWith(cleanInput));
-
-    if (match) {
-        const start = inputVal.length;
-        // Conserva el valor y capitalización escrita por el usuario, agregando el resto de la sugerencia
-        editCompradora.value = inputVal + match.substring(start);
-        editCompradora.setSelectionRange(start, match.length);
-    }
-});
-
-// Eliminar imagen en el modal
-btnEditDeleteImage.addEventListener('click', () => {
-    editingImageBase64 = null;
-    editImageContainer.style.display = 'none';
-    editNoImage.style.display = 'flex';
-    if (window.lucide) lucide.createIcons();
-});
-
-// Agregar imagen desde el modal
-btnEditAddImage.addEventListener('click', () => editFileInput.click());
-editFileInput.addEventListener('change', async () => {
-    if (editFileInput.files[0]) {
-        try {
-            editingImageBase64 = await fileToBase64(editFileInput.files[0]);
-            editPreviewImg.src = editingImageBase64;
+        if (p.image) {
+            editPreviewImg.src = p.image;
             editImageContainer.style.display = 'block';
             editNoImage.style.display = 'none';
-        } catch { showToast('error', 'Error al cargar la imagen.'); }
-    }
-    editFileInput.value = '';
-});
-
-// Eliminar producto desde el modal
-btnDeleteProduct.addEventListener('click', () => {
-    const id = editId.value;
-    const p = products.find(x => x.id === id);
-    if (!p) return;
-    if (!confirm(`¿Eliminar "${p.name}" de la lista?`)) return;
-
-    // Actualización optimista local
-    products = products.filter(x => x.id !== id);
-    const activeList = lists.find(l => l.id === activeListId);
-    if (activeList) activeList.products = products;
-
-    // Eliminación atómica en la nube
-    db.deleteProduct(activeListId, id)
-        .then(() => db.updateListMetadata(activeListId, activeList ? activeList.name : ''))
-        .catch(err => showToast('error', 'Error al eliminar el producto en la nube: ' + err.message));
-
-    closeEditModal();
-    renderProducts();
-    updateCount();
-    showToast('success', `"${p.name}" eliminado.`);
-});
-
-// ── TEMA ─────────────────────────────────────────────────────
-function applyTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('subastalista_theme', theme);
-}
-
-themeToggle.addEventListener('click', () => {
-    const cur = document.documentElement.getAttribute('data-theme');
-    applyTheme(cur === 'dark' ? 'light' : 'dark');
-});
-
-// ── TOAST ────────────────────────────────────────────────────
-let toastTimer = null;
-function showToast(type, msg) {
-    clearTimeout(toastTimer);
-    toast.className = `toast ${type} show`;
-    toast.textContent = msg;
-    toastTimer = setTimeout(() => { toast.className = 'toast'; }, 3000);
-}
-
-// ── GESTIÓN DE LISTAS MÚLTIPLES ──────────────────────────────
-function toggleListDropdown() {
-    const isVisible = listDropdown.style.display === 'block';
-    if (isVisible) {
-        closeListDropdown();
-    } else {
-        openListDropdown();
-    }
-}
-
-function openListDropdown() {
-    listDropdown.style.display = 'block';
-    btnListSelect.classList.add('open');
-    btnListSelect.setAttribute('aria-expanded', 'true');
-    renderListOptions();
-}
-
-function closeListDropdown() {
-    listDropdown.style.display = 'none';
-    btnListSelect.classList.remove('open');
-    btnListSelect.setAttribute('aria-expanded', 'false');
-}
-
-function renderListOptions() {
-    listOptions.innerHTML = '';
-    lists.forEach(l => {
-        const item = document.createElement('button');
-        item.type = 'button';
-        item.className = `list-option-item ${l.id === activeListId ? 'active' : ''}`;
-        item.setAttribute('role', 'option');
-        item.setAttribute('aria-selected', l.id === activeListId ? 'true' : 'false');
-
-        let content = `<span>${escHtml(l.name)}</span>`;
-        if (l.id === activeListId) {
-            content += `<i data-lucide="check" class="check-ico"></i>`;
+        } else {
+            editImageContainer.style.display = 'none';
+            editNoImage.style.display = 'flex';
         }
-        item.innerHTML = content;
 
-        item.addEventListener('click', () => {
-            selectList(l.id);
-            closeListDropdown();
-        });
+        // Renderizar historial (tomará en cuenta isAdmin)
+        renderPriceHistory(p);
 
-        listOptions.appendChild(item);
-    });
-    if (window.lucide) lucide.createIcons();
-}
+        editModal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
 
-async function selectList(id) {
-    if (id === activeListId) return;
-    activeListId = id;
-    await db.saveConfig('activeListId', activeListId);
+        // Aplicar adaptaciones visuales de rol al modal
+        updateRoleUI();
 
-    const activeList = lists.find(l => l.id === activeListId);
-    activeListName.textContent = activeList ? activeList.name : 'Sin nombre';
+        if (window.lucide) lucide.createIcons();
 
-    // Iniciar listener de productos en tiempo real para esta nueva lista
-    listenToActiveListProducts();
-
-    showToast('success', `Cargada la lista: “${activeList ? activeList.name : ''}”`);
-}
-
-// Abrir modal prompt
-function openPromptModal(mode) {
-    promptMode = mode;
-    promptInput.classList.remove('invalid');
-
-    if (mode === 'create') {
-        promptTitle.textContent = 'Nueva Lista';
-        promptLabel.textContent = 'Nombre de la lista';
-
-        // Formatear la fecha actual al formato: "dd de mes de aaaa" (ej: "04 de junio de 2026")
-        const now = new Date();
-        const dateStr = now.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
-
-        promptInput.value = dateStr;
-        promptInput.placeholder = 'Ej. Subasta del martes';
-        promptSubmitText.textContent = 'Crear Lista';
-    } else {
-        const activeList = lists.find(l => l.id === activeListId);
-        promptTitle.textContent = 'Renombrar Lista';
-        promptLabel.textContent = 'Nuevo nombre';
-        promptInput.value = activeList ? activeList.name : '';
-        promptInput.placeholder = 'Ej. Subasta del martes';
-        promptSubmitText.textContent = 'Guardar Nombre';
+        // Foco condicional: solo para el administrador
+        if (isAdmin) {
+            setTimeout(() => {
+                if (p.compradora) {
+                    editPrice.focus();
+                    editPrice.select();
+                } else {
+                    editCompradora.focus();
+                    editCompradora.select();
+                }
+            }, 80);
+        }
     }
 
-    promptModal.style.display = 'flex';
-    setTimeout(() => {
-        promptInput.focus();
-        promptInput.select();
-    }, 80);
-    closeListDropdown();
-}
+    function closeEditModal() {
+        editModal.style.display = 'none';
+        document.body.style.overflow = '';
+        editingImageBase64 = null;
+    }
 
-function closePromptModal() {
-    promptModal.style.display = 'none';
-    promptInput.value = '';
-}
+    // ── MODAL VISTA PREVIA DE IMAGEN (VISITANTE) ──
+    function openImagePreview(p) {
+        if (!p.image) {
+            showToast('info', 'Esta prenda no cuenta con una imagen.');
+            return;
+        }
+        imagePreviewImg.src = p.image;
+        imagePreviewTitle.textContent = p.name;
+        imagePreviewPrice.textContent = `$${p.price}`;
 
-// Eventos de Listas
-btnListSelect.addEventListener('click', (e) => {
-    if (!isAdmin) return; // Bloquear dropdown de listas para visitante
-    e.stopPropagation();
-    toggleListDropdown();
-});
+        // Obtener la hora aproximada de subasta (12 horas AM/PM) sin fecha
+        let timeStr = '--:--';
+        if (p.createdAt) {
+            const d = new Date(p.createdAt);
+            timeStr = d.toLocaleTimeString('es-ES', { hour: 'numeric', minute: '2-digit', hour12: true });
+            timeStr = timeStr.replace(/a\.\s*m\./i, 'AM').replace(/p\.\s*m\./i, 'PM').replace(/am/i, 'AM').replace(/pm/i, 'PM');
+        }
+        if (imagePreviewTime) {
+            imagePreviewTime.innerHTML = `<i data-lucide="clock" style="width: 12px; height: 12px; flex-shrink:0;"></i> Subido a las ${timeStr}`;
+        }
 
-// Cerrar dropdowns al hacer clic fuera
-document.addEventListener('click', (e) => {
-    if (!e.target.closest('.list-selector-container')) {
+        imagePreviewModal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function closeImagePreview() {
+        imagePreviewModal.style.display = 'none';
+        document.body.style.overflow = '';
+        imagePreviewImg.src = '';
+    }
+
+    btnCloseModal.addEventListener('click', closeEditModal);
+    editModal.addEventListener('click', e => { if (e.target === editModal) closeEditModal(); });
+
+    if (btnCloseImagePreview) {
+        btnCloseImagePreview.addEventListener('click', closeImagePreview);
+    }
+    if (imagePreviewModal) {
+        imagePreviewModal.addEventListener('click', e => { if (e.target === imagePreviewModal) closeImagePreview(); });
+    }
+    if (imagePreviewTime) {
+        imagePreviewTime.addEventListener('click', () => {
+            if (WHATSAPP_GROUP_URL) {
+                window.open(WHATSAPP_GROUP_URL, '_blank');
+            }
+        });
+    }
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            if (editModal.style.display === 'flex') closeEditModal();
+            if (imagePreviewModal.style.display === 'flex') closeImagePreview();
+        }
+    });
+
+    // Guardar edición (también con Enter)
+    editForm.addEventListener('submit', e => {
+        e.preventDefault();
+
+        const name = editName.value.trim();
+        const price = editPrice.value;
+
+        let valid = true;
+        if (!name) { editName.classList.add('invalid'); valid = false; }
+        else { editName.classList.remove('invalid'); }
+        if (!price || isNaN(parseFloat(price)) || parseFloat(price) < 0) {
+            editPrice.classList.add('invalid'); valid = false;
+        } else { editPrice.classList.remove('invalid'); }
+        if (!valid) return;
+
+        const idx = products.findIndex(x => x.id === editId.value);
+        if (idx === -1) return;
+
+        const newPrice = fmtPrice(price);
+        const newComp = editCompradora.value.trim();
+        const lastEntry = (products[idx].priceHistory || []).slice(-1)[0];
+        const priceChanged = !lastEntry || lastEntry.price !== newPrice || lastEntry.compradora !== newComp;
+
+        const updatedHistory = products[idx].priceHistory
+            ? [...products[idx].priceHistory]
+            : [{ price: products[idx].price, compradora: products[idx].compradora || '', timestamp: products[idx].createdAt, isBase: true }];
+
+        if (priceChanged) {
+            updatedHistory.push({
+                price: newPrice,
+                compradora: newComp,
+                timestamp: new Date().toISOString(),
+                isBase: false,
+            });
+        }
+
+        const updatedProduct = {
+            ...products[idx],
+            name,
+            price: newPrice,
+            compradora: newComp,
+            image: editingImageBase64,
+            updatedAt: new Date().toISOString(),
+            priceHistory: updatedHistory,
+        };
+
+        // Actualización optimista local
+        products[idx] = updatedProduct;
+        const activeList = lists.find(l => l.id === activeListId);
+        if (activeList) activeList.products = products;
+
+        // Guardado atómico en la nube
+        db.saveProduct(activeListId, updatedProduct)
+            .then(() => db.updateListMetadata(activeListId, activeList ? activeList.name : ''))
+            .catch(err => showToast('error', 'Error al guardar cambios: ' + err.message));
+
+        closeEditModal();
+        renderProducts();
+        showToast('success', 'Cambios guardados.');
+    });
+
+    // Enter en los inputs del modal envía el formulario
+    [editName, editPrice, editCompradora].forEach(input => {
+        input.addEventListener('keydown', e => {
+            if (e.key === 'Enter') { e.preventDefault(); editForm.requestSubmit(); }
+        });
+        input.addEventListener('input', (e) => {
+            input.classList.remove('invalid');
+            if (input !== editPrice) {
+                handleAutocapitalize(e);
+            }
+        });
+    });
+
+    // Registrar autocapitalización en el prompt input
+    if (promptInput) {
+        promptInput.addEventListener('input', handleAutocapitalize);
+    }
+
+    // Autocompletado del campo de Compradoras con Tab/Enter nativo
+    function getAllBuyers() {
+        const buyers = new Set();
+        lists.forEach(l => {
+            if (Array.isArray(l.products)) {
+                l.products.forEach(p => {
+                    if (p.compradora && p.compradora.trim() !== '') {
+                        buyers.add(p.compradora.trim());
+                    }
+                });
+            }
+        });
+        return Array.from(buyers);
+    }
+
+    function cleanText(text) {
+        return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    }
+
+    editCompradora.addEventListener('input', (e) => {
+        // 1. Aplicar autocapitalización primero (resguardando selección de cursor)
+        const startPos = editCompradora.selectionStart;
+        const endPos = editCompradora.selectionEnd;
+        const originalValue = editCompradora.value;
+        const capitalizedValue = capitalizeWords(originalValue);
+
+        if (originalValue !== capitalizedValue) {
+            editCompradora.value = capitalizedValue;
+            editCompradora.setSelectionRange(startPos, endPos);
+        }
+
+        const inputVal = editCompradora.value;
+        if (!inputVal) return;
+
+        // Si es un borrado, no auto-completar de inmediato
+        if (e.inputType && e.inputType.startsWith('delete')) return;
+
+        const buyers = getAllBuyers();
+        const cleanInput = cleanText(inputVal);
+        const match = buyers.find(b => cleanText(b).startsWith(cleanInput));
+
+        if (match) {
+            const start = inputVal.length;
+            // Conserva el valor y capitalización escrita por el usuario, agregando el resto de la sugerencia
+            editCompradora.value = inputVal + match.substring(start);
+            editCompradora.setSelectionRange(start, match.length);
+        }
+    });
+
+    // Eliminar imagen en el modal
+    btnEditDeleteImage.addEventListener('click', () => {
+        editingImageBase64 = null;
+        editImageContainer.style.display = 'none';
+        editNoImage.style.display = 'flex';
+        if (window.lucide) lucide.createIcons();
+    });
+
+    // Agregar imagen desde el modal
+    btnEditAddImage.addEventListener('click', () => editFileInput.click());
+    editFileInput.addEventListener('change', async () => {
+        if (editFileInput.files[0]) {
+            try {
+                editingImageBase64 = await fileToBase64(editFileInput.files[0]);
+                editPreviewImg.src = editingImageBase64;
+                editImageContainer.style.display = 'block';
+                editNoImage.style.display = 'none';
+            } catch { showToast('error', 'Error al cargar la imagen.'); }
+        }
+        editFileInput.value = '';
+    });
+
+    // Eliminar producto desde el modal
+    btnDeleteProduct.addEventListener('click', () => {
+        const id = editId.value;
+        const p = products.find(x => x.id === id);
+        if (!p) return;
+        if (!confirm(`¿Eliminar "${p.name}" de la lista?`)) return;
+
+        // Actualización optimista local
+        products = products.filter(x => x.id !== id);
+        const activeList = lists.find(l => l.id === activeListId);
+        if (activeList) activeList.products = products;
+
+        // Eliminación atómica en la nube
+        db.deleteProduct(activeListId, id)
+            .then(() => db.updateListMetadata(activeListId, activeList ? activeList.name : ''))
+            .catch(err => showToast('error', 'Error al eliminar el producto en la nube: ' + err.message));
+
+        closeEditModal();
+        renderProducts();
+        updateCount();
+        showToast('success', `"${p.name}" eliminado.`);
+    });
+
+    // ── TEMA ─────────────────────────────────────────────────────
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('subastalista_theme', theme);
+    }
+
+    themeToggle.addEventListener('click', () => {
+        const cur = document.documentElement.getAttribute('data-theme');
+        applyTheme(cur === 'dark' ? 'light' : 'dark');
+    });
+
+    // ── TOAST ────────────────────────────────────────────────────
+    let toastTimer = null;
+    function showToast(type, msg) {
+        clearTimeout(toastTimer);
+        toast.className = `toast ${type} show`;
+        toast.textContent = msg;
+        toastTimer = setTimeout(() => { toast.className = 'toast'; }, 3000);
+    }
+
+    // ── GESTIÓN DE LISTAS MÚLTIPLES ──────────────────────────────
+    function toggleListDropdown() {
+        const isVisible = listDropdown.style.display === 'block';
+        if (isVisible) {
+            closeListDropdown();
+        } else {
+            openListDropdown();
+        }
+    }
+
+    function openListDropdown() {
+        listDropdown.style.display = 'block';
+        btnListSelect.classList.add('open');
+        btnListSelect.setAttribute('aria-expanded', 'true');
+        renderListOptions();
+    }
+
+    function closeListDropdown() {
+        listDropdown.style.display = 'none';
+        btnListSelect.classList.remove('open');
+        btnListSelect.setAttribute('aria-expanded', 'false');
+    }
+
+    function renderListOptions() {
+        listOptions.innerHTML = '';
+        lists.forEach(l => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = `list-option-item ${l.id === activeListId ? 'active' : ''}`;
+            item.setAttribute('role', 'option');
+            item.setAttribute('aria-selected', l.id === activeListId ? 'true' : 'false');
+
+            let content = `<span>${escHtml(l.name)}</span>`;
+            if (l.id === activeListId) {
+                content += `<i data-lucide="check" class="check-ico"></i>`;
+            }
+            item.innerHTML = content;
+
+            item.addEventListener('click', () => {
+                selectList(l.id);
+                closeListDropdown();
+            });
+
+            listOptions.appendChild(item);
+        });
+        if (window.lucide) lucide.createIcons();
+    }
+
+    async function selectList(id) {
+        if (id === activeListId) return;
+        activeListId = id;
+        await db.saveConfig('activeListId', activeListId);
+
+        const activeList = lists.find(l => l.id === activeListId);
+        activeListName.textContent = activeList ? activeList.name : 'Sin nombre';
+
+        // Iniciar listener de productos en tiempo real para esta nueva lista
+        listenToActiveListProducts();
+
+        showToast('success', `Cargada la lista: “${activeList ? activeList.name : ''}”`);
+    }
+
+    // Abrir modal prompt
+    function openPromptModal(mode) {
+        promptMode = mode;
+        promptInput.classList.remove('invalid');
+
+        if (mode === 'create') {
+            promptTitle.textContent = 'Nueva Lista';
+            promptLabel.textContent = 'Nombre de la lista';
+
+            // Formatear la fecha actual al formato: "dd de mes de aaaa" (ej: "04 de junio de 2026")
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
+
+            promptInput.value = dateStr;
+            promptInput.placeholder = 'Ej. Subasta del martes';
+            promptSubmitText.textContent = 'Crear Lista';
+        } else {
+            const activeList = lists.find(l => l.id === activeListId);
+            promptTitle.textContent = 'Renombrar Lista';
+            promptLabel.textContent = 'Nuevo nombre';
+            promptInput.value = activeList ? activeList.name : '';
+            promptInput.placeholder = 'Ej. Subasta del martes';
+            promptSubmitText.textContent = 'Guardar Nombre';
+        }
+
+        promptModal.style.display = 'flex';
+        setTimeout(() => {
+            promptInput.focus();
+            promptInput.select();
+        }, 80);
         closeListDropdown();
     }
-    if (!e.target.closest('.tools-selector-container')) {
-        closeToolsDropdown();
-    }
-});
 
-btnCreateList.addEventListener('click', () => openPromptModal('create'));
-btnRenameList.addEventListener('click', () => openPromptModal('rename'));
-
-btnDeleteList.addEventListener('click', async () => {
-    const activeList = lists.find(l => l.id === activeListId);
-    if (!activeList) return;
-
-    closeListDropdown();
-
-    if (!confirm(`¿Eliminar la lista "${activeList.name}"?\nSe perderán de forma permanente todos sus productos (${activeList.products.length}).`)) {
-        return;
+    function closePromptModal() {
+        promptModal.style.display = 'none';
+        promptInput.value = '';
     }
 
-    try {
-        await db.deleteList(activeListId);
-        lists = lists.filter(l => l.id !== activeListId);
+    // Eventos de Listas
+    btnListSelect.addEventListener('click', (e) => {
+        if (!isAdmin) return; // Bloquear dropdown de listas para visitante
+        e.stopPropagation();
+        toggleListDropdown();
+    });
 
-        if (lists.length === 0) {
-            // Si eliminamos la última lista, creamos una nueva por defecto
-            const defaultList = {
+    // Cerrar dropdowns al hacer clic fuera
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.list-selector-container')) {
+            closeListDropdown();
+        }
+        if (!e.target.closest('.tools-selector-container')) {
+            closeToolsDropdown();
+        }
+    });
+
+    btnCreateList.addEventListener('click', () => openPromptModal('create'));
+    btnRenameList.addEventListener('click', () => openPromptModal('rename'));
+
+    btnDeleteList.addEventListener('click', async () => {
+        const activeList = lists.find(l => l.id === activeListId);
+        if (!activeList) return;
+
+        closeListDropdown();
+
+        if (!confirm(`¿Eliminar la lista "${activeList.name}"?\nSe perderán de forma permanente todos sus productos (${activeList.products.length}).`)) {
+            return;
+        }
+
+        try {
+            await db.deleteList(activeListId);
+            lists = lists.filter(l => l.id !== activeListId);
+
+            if (lists.length === 0) {
+                // Si eliminamos la última lista, creamos una nueva por defecto
+                const defaultList = {
+                    id: `list_${Date.now()}`,
+                    name: 'Lista Principal',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    products: []
+                };
+                await db.saveList(defaultList);
+                lists = [defaultList];
+            }
+
+            // Seleccionamos la primera lista de la colección restante
+            activeListId = lists[0].id;
+            await db.saveConfig('activeListId', activeListId);
+
+            const activeListObj = lists[0];
+            activeListName.textContent = activeListObj.name;
+
+            // Iniciar el listener de la nueva lista seleccionada
+            listenToActiveListProducts();
+
+            showToast('success', 'Lista eliminada correctamente.');
+        } catch (err) {
+            showToast('error', 'Error al eliminar la lista: ' + err.message);
+        }
+    });
+
+    // Modal prompt eventos
+    btnClosePrompt.addEventListener('click', closePromptModal);
+    btnCancelPrompt.addEventListener('click', closePromptModal);
+    promptModal.addEventListener('click', (e) => {
+        if (e.target === promptModal) closePromptModal();
+    });
+
+    promptForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const val = promptInput.value.trim();
+        if (!val) {
+            promptInput.classList.add('invalid');
+            return;
+        }
+        promptInput.classList.remove('invalid');
+
+        if (promptMode === 'create') {
+            const newList = {
                 id: `list_${Date.now()}`,
-                name: 'Lista Principal',
+                name: val,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
                 products: []
             };
-            await db.saveList(defaultList);
-            lists = [defaultList];
-        }
-
-        // Seleccionamos la primera lista de la colección restante
-        activeListId = lists[0].id;
-        await db.saveConfig('activeListId', activeListId);
-
-        const activeListObj = lists[0];
-        activeListName.textContent = activeListObj.name;
-
-        // Iniciar el listener de la nueva lista seleccionada
-        listenToActiveListProducts();
-        
-        showToast('success', 'Lista eliminada correctamente.');
-    } catch (err) {
-        showToast('error', 'Error al eliminar la lista: ' + err.message);
-    }
-});
-
-// Modal prompt eventos
-btnClosePrompt.addEventListener('click', closePromptModal);
-btnCancelPrompt.addEventListener('click', closePromptModal);
-promptModal.addEventListener('click', (e) => {
-    if (e.target === promptModal) closePromptModal();
-});
-
-promptForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const val = promptInput.value.trim();
-    if (!val) {
-        promptInput.classList.add('invalid');
-        return;
-    }
-    promptInput.classList.remove('invalid');
-
-    if (promptMode === 'create') {
-        const newList = {
-            id: `list_${Date.now()}`,
-            name: val,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            products: []
-        };
-        try {
-            await db.saveList(newList);
-            lists.push(newList);
-            activeListId = newList.id;
-            await db.saveConfig('activeListId', activeListId);
-            activeListName.textContent = val;
-
-            closePromptModal();
-            // Iniciar listener en tiempo real de la nueva lista
-            listenToActiveListProducts();
-            showToast('success', `Lista “${val}” creada.`);
-        } catch (err) {
-            showToast('error', 'Error al guardar la nueva lista: ' + err.message);
-        }
-    } else {
-        const activeList = lists.find(l => l.id === activeListId);
-        if (activeList) {
-            activeList.name = val;
-            activeList.updatedAt = new Date().toISOString();
             try {
-                await db.saveList(activeList);
+                await db.saveList(newList);
+                lists.push(newList);
+                activeListId = newList.id;
+                await db.saveConfig('activeListId', activeListId);
                 activeListName.textContent = val;
+
                 closePromptModal();
-                showToast('success', `Lista renombrada a “${val}”.`);
+                // Iniciar listener en tiempo real de la nueva lista
+                listenToActiveListProducts();
+                showToast('success', `Lista “${val}” creada.`);
             } catch (err) {
-                showToast('error', 'Error al renombrar la lista: ' + err.message);
+                showToast('error', 'Error al guardar la nueva lista: ' + err.message);
+            }
+        } else {
+            const activeList = lists.find(l => l.id === activeListId);
+            if (activeList) {
+                activeList.name = val;
+                activeList.updatedAt = new Date().toISOString();
+                try {
+                    await db.saveList(activeList);
+                    activeListName.textContent = val;
+                    closePromptModal();
+                    showToast('success', `Lista renombrada a “${val}”.`);
+                } catch (err) {
+                    showToast('error', 'Error al renombrar la lista: ' + err.message);
+                }
             }
         }
-    }
-});
-
-// ── GESTIÓN DE HERRAMIENTAS Y RESPALDOS ─────────────────────────
-function toggleToolsDropdown() {
-    const isVisible = toolsDropdown.style.display === 'block';
-    if (isVisible) {
-        closeToolsDropdown();
-    } else {
-        openToolsDropdown();
-    }
-}
-
-function openToolsDropdown() {
-    toolsDropdown.style.display = 'block';
-    btnToolsSelect.classList.add('open');
-    btnToolsSelect.setAttribute('aria-expanded', 'true');
-    closeListDropdown();
-}
-
-function closeToolsDropdown() {
-    toolsDropdown.style.display = 'none';
-    btnToolsSelect.classList.remove('open');
-    btnToolsSelect.setAttribute('aria-expanded', 'false');
-}
-
-if (btnToolsSelect) {
-    btnToolsSelect.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleToolsDropdown();
     });
-}
 
-// Exportar copia de seguridad (backup JSON)
-async function handleExportBackup() {
-    try {
-        const allLists = await db.getLists();
-        const activeId = await db.getConfig('activeListId');
-
-        if (allLists.length === 0) {
-            showToast('error', 'No hay información para exportar.');
-            return;
+    // ── GESTIÓN DE HERRAMIENTAS Y RESPALDOS ─────────────────────────
+    function toggleToolsDropdown() {
+        const isVisible = toolsDropdown.style.display === 'block';
+        if (isVisible) {
+            closeToolsDropdown();
+        } else {
+            openToolsDropdown();
         }
-
-        const backupData = {
-            version: 1,
-            exportedAt: new Date().toISOString(),
-            activeListId: activeId,
-            lists: allLists
-        };
-
-        const dataStr = JSON.stringify(backupData);
-        const blob = new Blob([dataStr], { type: 'application/json' });
-
-        const now = new Date();
-        const dateStr = now.getFullYear() + '-' +
-            String(now.getMonth() + 1).padStart(2, '0') + '-' +
-            String(now.getDate()).padStart(2, '0');
-
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `subastalista_backup_${dateStr}.json`;
-        document.body.appendChild(a);
-        a.click();
-
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        showToast('success', 'Backup generado y descargado correctamente.');
-    } catch (err) {
-        showToast('error', 'Error al generar el backup: ' + err.message);
     }
-}
 
-if (btnExportBackup) {
-    btnExportBackup.addEventListener('click', async () => {
-        closeToolsDropdown();
-        await handleExportBackup();
-    });
-}
+    function openToolsDropdown() {
+        toolsDropdown.style.display = 'block';
+        btnToolsSelect.classList.add('open');
+        btnToolsSelect.setAttribute('aria-expanded', 'true');
+        closeListDropdown();
+    }
 
-if (btnImportBackup) {
-    btnImportBackup.addEventListener('click', () => {
-        closeToolsDropdown();
-        backupFileInput.click();
-    });
-}
+    function closeToolsDropdown() {
+        toolsDropdown.style.display = 'none';
+        btnToolsSelect.classList.remove('open');
+        btnToolsSelect.setAttribute('aria-expanded', 'false');
+    }
 
-backupFileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    if (btnToolsSelect) {
+        btnToolsSelect.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleToolsDropdown();
+        });
+    }
 
-    const reader = new FileReader();
-    reader.onload = async (evt) => {
+    // Exportar copia de seguridad (backup JSON)
+    async function handleExportBackup() {
         try {
-            const backupData = JSON.parse(evt.target.result);
+            const allLists = await db.getLists();
+            const activeId = await db.getConfig('activeListId');
 
-            // Validaciones básicas
-            if (!backupData || typeof backupData !== 'object') {
-                throw new Error('El archivo no tiene un formato válido.');
-            }
-            if (!Array.isArray(backupData.lists)) {
-                throw new Error('El backup no contiene una lista de datos válida.');
-            }
-
-            const confirmRestore = confirm(
-                `¿Estás seguro de que deseas restaurar este respaldo?\n` +
-                `Se importarán ${backupData.lists.length} lista(s).\n\n` +
-                `¡ATENCIÓN!: Esto sobrescribirá y reemplazará todos tus datos actuales de Bonito Bazar.`
-            );
-
-            if (!confirmRestore) {
-                backupFileInput.value = '';
+            if (allLists.length === 0) {
+                showToast('error', 'No hay información para exportar.');
                 return;
             }
 
-            // Restaurar base de datos
-            await db.restoreBackup(backupData.lists, backupData.activeListId);
+            const backupData = {
+                version: 1,
+                exportedAt: new Date().toISOString(),
+                activeListId: activeId,
+                lists: allLists
+            };
 
-            showToast('success', 'Backup restaurado con éxito. Recargando aplicación...');
+            const dataStr = JSON.stringify(backupData);
+            const blob = new Blob([dataStr], { type: 'application/json' });
 
-            setTimeout(() => {
-                location.reload();
-            }, 1500);
-
-        } catch (err) {
-            showToast('error', 'Error al importar el backup: ' + err.message);
-            backupFileInput.value = '';
-        }
-    };
-
-    reader.onerror = () => {
-        showToast('error', 'No se pudo leer el archivo seleccionado.');
-        backupFileInput.value = '';
-    };
-
-    reader.readAsText(file);
-});
-
-// Copiar mensaje de cierre de subasta al portapapeles
-if (btnCopyClosingMsg) {
-    btnCopyClosingMsg.addEventListener('click', async () => {
-        closeToolsDropdown();
-        try {
             const now = new Date();
-            const closeTime = new Date(now.getTime() + 10 * 60 * 1000);
-            const lastMsgTime = new Date(closeTime.getTime() - 1000);
+            const dateStr = now.getFullYear() + '-' +
+                String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                String(now.getDate()).padStart(2, '0');
 
-            function formatHMS(date) {
-                const h = String(date.getHours()).padStart(2, '0');
-                const m = String(date.getMinutes()).padStart(2, '0');
-                const s = String(date.getSeconds()).padStart(2, '0');
-                return `${h}:${m}:${s}`;
-            }
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `subastalista_backup_${dateStr}.json`;
+            document.body.appendChild(a);
+            a.click();
 
-            const closingText = `SUBASTAS\n- ÚLTIMO MENSAJE: ${formatHMS(lastMsgTime)}\n- CIERRO GRUPO:  ${formatHMS(closeTime)}`;
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
 
-            await navigator.clipboard.writeText(closingText);
-            showToast('success', '¡Mensaje de cierre copiado al portapapeles!');
+            showToast('success', 'Backup generado y descargado correctamente.');
         } catch (err) {
-            showToast('error', 'Error al copiar el mensaje: ' + err.message);
+            showToast('error', 'Error al generar el backup: ' + err.message);
         }
+    }
+
+    if (btnExportBackup) {
+        btnExportBackup.addEventListener('click', async () => {
+            closeToolsDropdown();
+            await handleExportBackup();
+        });
+    }
+
+    if (btnImportBackup) {
+        btnImportBackup.addEventListener('click', () => {
+            closeToolsDropdown();
+            backupFileInput.click();
+        });
+    }
+
+    backupFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+            try {
+                const backupData = JSON.parse(evt.target.result);
+
+                // Validaciones básicas
+                if (!backupData || typeof backupData !== 'object') {
+                    throw new Error('El archivo no tiene un formato válido.');
+                }
+                if (!Array.isArray(backupData.lists)) {
+                    throw new Error('El backup no contiene una lista de datos válida.');
+                }
+
+                const confirmRestore = confirm(
+                    `¿Estás seguro de que deseas restaurar este respaldo?\n` +
+                    `Se importarán ${backupData.lists.length} lista(s).\n\n` +
+                    `¡ATENCIÓN!: Esto sobrescribirá y reemplazará todos tus datos actuales de Bonito Bazar.`
+                );
+
+                if (!confirmRestore) {
+                    backupFileInput.value = '';
+                    return;
+                }
+
+                // Restaurar base de datos
+                await db.restoreBackup(backupData.lists, backupData.activeListId);
+
+                showToast('success', 'Backup restaurado con éxito. Recargando aplicación...');
+
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+
+            } catch (err) {
+                showToast('error', 'Error al importar el backup: ' + err.message);
+                backupFileInput.value = '';
+            }
+        };
+
+        reader.onerror = () => {
+            showToast('error', 'No se pudo leer el archivo seleccionado.');
+            backupFileInput.value = '';
+        };
+
+        reader.readAsText(file);
     });
-}
 
-// Ordenar columna de Adjudicados por compradora
-btnSortSold.addEventListener('click', () => {
-    if (soldSortMode === 'default') {
-        soldSortMode = 'buyer-asc';
-        btnSortSold.classList.add('active');
-        btnSortSold.title = 'Ordenar por compradora (A-Z)';
-        btnSortSold.innerHTML = '<i data-lucide="arrow-down-az"></i>';
-        showToast('success', 'Ordenado por compradora (A-Z)');
-    } else if (soldSortMode === 'buyer-asc') {
-        soldSortMode = 'buyer-desc';
-        btnSortSold.classList.add('active');
-        btnSortSold.title = 'Ordenar por compradora (Z-A)';
-        btnSortSold.innerHTML = '<i data-lucide="arrow-up-za"></i>';
-        showToast('success', 'Ordenado por compradora (Z-A)');
-    } else {
-        soldSortMode = 'default';
-        btnSortSold.classList.remove('active');
-        btnSortSold.title = 'Orden por defecto';
-        btnSortSold.innerHTML = '<i data-lucide="arrow-up-down"></i>';
-        showToast('success', 'Restaurado orden por defecto');
+    // Copiar mensaje de cierre de subasta al portapapeles
+    if (btnCopyClosingMsg) {
+        btnCopyClosingMsg.addEventListener('click', async () => {
+            closeToolsDropdown();
+            try {
+                const now = new Date();
+                const closeTime = new Date(now.getTime() + 10 * 60 * 1000);
+                const lastMsgTime = new Date(closeTime.getTime() - 1000);
+
+                function formatHMS(date) {
+                    const h = String(date.getHours()).padStart(2, '0');
+                    const m = String(date.getMinutes()).padStart(2, '0');
+                    const s = String(date.getSeconds()).padStart(2, '0');
+                    return `${h}:${m}:${s}`;
+                }
+
+                const closingText = `SUBASTAS\n- ÚLTIMO MENSAJE: ${formatHMS(lastMsgTime)}\n- CIERRO GRUPO:  ${formatHMS(closeTime)}`;
+
+                await navigator.clipboard.writeText(closingText);
+                showToast('success', '¡Mensaje de cierre copiado al portapapeles!');
+            } catch (err) {
+                showToast('error', 'Error al copiar el mensaje: ' + err.message);
+            }
+        });
     }
-    if (window.lucide) lucide.createIcons();
-    renderProducts();
-});
 
-// Ordenar lista general por últimos modificados
-btnSortModified.addEventListener('click', () => {
-    if (globalSortMode === 'default') {
-        globalSortMode = 'modified-desc';
-        btnSortModified.classList.add('active');
-        btnSortModified.title = 'Ordenar: Últimos modificados primero';
-        showToast('success', 'Ordenado por últimos modificados');
-    } else {
-        globalSortMode = 'default';
-        btnSortModified.classList.remove('active');
-        btnSortModified.title = 'Ordenar: Por defecto';
-        showToast('success', 'Restaurado orden por defecto');
-    }
-    if (window.lucide) lucide.createIcons();
-    renderProducts();
-});
+    // Ordenar columna de Adjudicados por compradora
+    btnSortSold.addEventListener('click', () => {
+        if (soldSortMode === 'default') {
+            soldSortMode = 'buyer-asc';
+            btnSortSold.classList.add('active');
+            btnSortSold.title = 'Ordenar por compradora (A-Z)';
+            btnSortSold.innerHTML = '<i data-lucide="arrow-down-az"></i>';
+            showToast('success', 'Ordenado por compradora (A-Z)');
+        } else if (soldSortMode === 'buyer-asc') {
+            soldSortMode = 'buyer-desc';
+            btnSortSold.classList.add('active');
+            btnSortSold.title = 'Ordenar por compradora (Z-A)';
+            btnSortSold.innerHTML = '<i data-lucide="arrow-up-za"></i>';
+            showToast('success', 'Ordenado por compradora (Z-A)');
+        } else {
+            soldSortMode = 'default';
+            btnSortSold.classList.remove('active');
+            btnSortSold.title = 'Orden por defecto';
+            btnSortSold.innerHTML = '<i data-lucide="arrow-up-down"></i>';
+            showToast('success', 'Restaurado orden por defecto');
+        }
+        if (window.lucide) lucide.createIcons();
+        renderProducts();
+    });
+
+    // Ordenar lista general por últimos modificados
+    btnSortModified.addEventListener('click', () => {
+        if (globalSortMode === 'default') {
+            globalSortMode = 'modified-desc';
+            btnSortModified.classList.add('active');
+            btnSortModified.title = 'Ordenar: Últimos modificados primero';
+            showToast('success', 'Ordenado por últimos modificados');
+        } else {
+            globalSortMode = 'default';
+            btnSortModified.classList.remove('active');
+            btnSortModified.title = 'Ordenar: Por defecto';
+            showToast('success', 'Restaurado orden por defecto');
+        }
+        if (window.lucide) lucide.createIcons();
+        renderProducts();
+    });
 
 
 
-// Vista de resumen: Abrir, cerrar y renderizar
-btnShowSummary.addEventListener('click', () => {
-    renderSummaryView();
-    summaryView.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-    updateScrollButton();
-});
+    // Vista de resumen: Abrir, cerrar y renderizar
+    btnShowSummary.addEventListener('click', () => {
+        renderSummaryView();
+        summaryView.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        updateScrollButton();
+    });
 
-btnCloseSummary.addEventListener('click', () => {
-    clearCopiedIndicators();
-    summaryView.style.display = 'none';
-    document.body.style.overflow = '';
-    updateScrollButton();
-});
-
-// Cerrar con Escape
-document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && summaryView.style.display === 'flex') {
+    btnCloseSummary.addEventListener('click', () => {
         clearCopiedIndicators();
         summaryView.style.display = 'none';
         document.body.style.overflow = '';
         updateScrollButton();
-    }
-});
-
-// Ordenar cuentas de compradoras
-btnSortBuyers.addEventListener('click', () => {
-    if (buyersSortMode === 'default') {
-        buyersSortMode = 'name-asc';
-        btnSortBuyers.classList.add('active');
-        btnSortBuyers.title = 'Ordenar cuentas: Nombre A-Z';
-        btnSortBuyers.innerHTML = '<i data-lucide="arrow-down-az"></i>';
-        showToast('success', 'Cuentas ordenadas por Nombre (A-Z)');
-    } else if (buyersSortMode === 'name-asc') {
-        buyersSortMode = 'total-desc';
-        btnSortBuyers.classList.add('active');
-        btnSortBuyers.title = 'Ordenar cuentas: Mayor Compra';
-        btnSortBuyers.innerHTML = '<i data-lucide="arrow-down-wide-narrow"></i>';
-        showToast('success', 'Cuentas ordenadas por Mayor Compra');
-    } else if (buyersSortMode === 'total-desc') {
-        buyersSortMode = 'modified-desc';
-        btnSortBuyers.classList.add('active');
-        btnSortBuyers.title = 'Ordenar cuentas: Últimos modificados';
-        btnSortBuyers.innerHTML = '<i data-lucide="history"></i>';
-        showToast('success', 'Cuentas ordenadas por últimos modificados');
-    } else {
-        buyersSortMode = 'default';
-        btnSortBuyers.classList.remove('active');
-        btnSortBuyers.title = 'Ordenar cuentas: Por defecto';
-        btnSortBuyers.innerHTML = '<i data-lucide="arrow-up-down"></i>';
-        showToast('success', 'Restaurado orden de cuentas por defecto');
-    }
-    if (window.lucide) lucide.createIcons();
-    renderSummaryView();
-});
-
-function renderSummaryView() {
-    summaryBuyersList.innerHTML = '';
-
-    const availableProducts = products.filter(p => !p.compradora || p.compradora.trim() === '');
-    const soldProducts = products.filter(p => p.compradora && p.compradora.trim() !== '');
-
-    // Agrupar por compradora
-    const groups = {};
-    let totalRecaudado = 0;
-
-    soldProducts.forEach(p => {
-        const comp = p.compradora.trim();
-        if (!groups[comp]) {
-            groups[comp] = {
-                name: comp,
-                products: [],
-                totalPrice: 0
-            };
-        }
-        groups[comp].products.push(p);
-        const priceNum = parseFloat(p.price || 0);
-        groups[comp].totalPrice += priceNum;
-        totalRecaudado += priceNum;
     });
 
-    let listBuyers = Object.values(groups);
+    // Cerrar con Escape
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && summaryView.style.display === 'flex') {
+            clearCopiedIndicators();
+            summaryView.style.display = 'none';
+            document.body.style.overflow = '';
+            updateScrollButton();
+        }
+    });
 
-    // Filtrar por término de búsqueda en el resumen (compradora o prenda)
-    if (summarySearchTerm) {
-        const t = summarySearchTerm.toLowerCase();
-        listBuyers = listBuyers.filter(g =>
-            g.name.toLowerCase().includes(t) ||
-            g.products.some(p => p.name.toLowerCase().includes(t))
-        );
-    }
+    // Ordenar cuentas de compradoras
+    btnSortBuyers.addEventListener('click', () => {
+        if (buyersSortMode === 'default') {
+            buyersSortMode = 'name-asc';
+            btnSortBuyers.classList.add('active');
+            btnSortBuyers.title = 'Ordenar cuentas: Nombre A-Z';
+            btnSortBuyers.innerHTML = '<i data-lucide="arrow-down-az"></i>';
+            showToast('success', 'Cuentas ordenadas por Nombre (A-Z)');
+        } else if (buyersSortMode === 'name-asc') {
+            buyersSortMode = 'total-desc';
+            btnSortBuyers.classList.add('active');
+            btnSortBuyers.title = 'Ordenar cuentas: Mayor Compra';
+            btnSortBuyers.innerHTML = '<i data-lucide="arrow-down-wide-narrow"></i>';
+            showToast('success', 'Cuentas ordenadas por Mayor Compra');
+        } else if (buyersSortMode === 'total-desc') {
+            buyersSortMode = 'modified-desc';
+            btnSortBuyers.classList.add('active');
+            btnSortBuyers.title = 'Ordenar cuentas: Últimos modificados';
+            btnSortBuyers.innerHTML = '<i data-lucide="history"></i>';
+            showToast('success', 'Cuentas ordenadas por últimos modificados');
+        } else {
+            buyersSortMode = 'default';
+            btnSortBuyers.classList.remove('active');
+            btnSortBuyers.title = 'Ordenar cuentas: Por defecto';
+            btnSortBuyers.innerHTML = '<i data-lucide="arrow-up-down"></i>';
+            showToast('success', 'Restaurado orden de cuentas por defecto');
+        }
+        if (window.lucide) lucide.createIcons();
+        renderSummaryView();
+    });
 
-    let filteredAvailable = [...availableProducts];
-    if (summarySearchTerm) {
-        const t = summarySearchTerm.toLowerCase();
-        filteredAvailable = filteredAvailable.filter(p => p.name.toLowerCase().includes(t));
-    }
+    function renderSummaryView() {
+        summaryBuyersList.innerHTML = '';
 
-    if (products.length === 0) {
-        summaryEmptyState.style.display = 'flex';
-        summaryBuyersList.style.display = 'none';
-        summaryEmptyState.querySelector('h2').textContent = 'Sin ventas adjudicadas';
-        summaryEmptyState.querySelector('p').textContent = 'Asigna una Compradora a tus productos en el listado para ver sus cuentas aquí.';
-        statTotalSoldMoney.textContent = '$0.00';
-        statUniqueBuyers.textContent = '0';
-        statTotalSoldQty.textContent = '0';
-        return;
-    }
+        const availableProducts = products.filter(p => !p.compradora || p.compradora.trim() === '');
+        const soldProducts = products.filter(p => p.compradora && p.compradora.trim() !== '');
 
-    const hasFilteredBuyers = listBuyers.length > 0;
-    const hasFilteredAvail = filteredAvailable.length > 0;
+        // Agrupar por compradora
+        const groups = {};
+        let totalRecaudado = 0;
 
-    if (!hasFilteredBuyers && !hasFilteredAvail) {
-        summaryEmptyState.style.display = 'flex';
-        summaryBuyersList.style.display = 'none';
-        summaryEmptyState.querySelector('h2').textContent = 'Sin coincidencias';
-        summaryEmptyState.querySelector('p').textContent = 'No hay cuentas ni productos que coincidan con tu búsqueda.';
-    } else {
-        summaryEmptyState.style.display = 'none';
-        summaryBuyersList.style.display = 'flex';
-    }
-
-    // Ordenar cuentas de compradoras según el modo seleccionado
-    if (buyersSortMode === 'name-asc') {
-        listBuyers.sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
-    } else if (buyersSortMode === 'total-desc') {
-        listBuyers.sort((a, b) => b.totalPrice - a.totalPrice);
-    } else if (buyersSortMode === 'modified-desc') {
-        listBuyers.sort((a, b) => {
-            const dateA = Math.max(...a.products.map(p => getLatestHistoryDate(p).getTime()));
-            const dateB = Math.max(...b.products.map(p => getLatestHistoryDate(p).getTime()));
-            return dateB - dateA;
+        soldProducts.forEach(p => {
+            const comp = p.compradora.trim();
+            if (!groups[comp]) {
+                groups[comp] = {
+                    name: comp,
+                    products: [],
+                    totalPrice: 0
+                };
+            }
+            groups[comp].products.push(p);
+            const priceNum = parseFloat(p.price || 0);
+            groups[comp].totalPrice += priceNum;
+            totalRecaudado += priceNum;
         });
-    }
 
-    // Actualizar estadísticas en UI (totales de todas las adjudicadas, sin filtrar)
-    statTotalSoldMoney.textContent = `$${fmtPrice(totalRecaudado)}`;
-    statUniqueBuyers.textContent = Object.keys(groups).length;
-    statTotalSoldQty.textContent = soldProducts.length;
+        let listBuyers = Object.values(groups);
 
-    // Renderizar cada compradora
-    listBuyers.forEach(g => {
-        const groupCard = document.createElement('div');
-        groupCard.className = 'summary-group-card';
-        groupCard.id = `group-card-${g.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        // Filtrar por término de búsqueda en el resumen (compradora o prenda)
+        if (summarySearchTerm) {
+            const t = summarySearchTerm.toLowerCase();
+            listBuyers = listBuyers.filter(g =>
+                g.name.toLowerCase().includes(t) ||
+                g.products.some(p => p.name.toLowerCase().includes(t))
+            );
+        }
 
-        // Contenedor del recibo imprimible
-        const receipt = document.createElement('div');
-        receipt.className = 'summary-card-receipt';
+        let filteredAvailable = [...availableProducts];
+        if (summarySearchTerm) {
+            const t = summarySearchTerm.toLowerCase();
+            filteredAvailable = filteredAvailable.filter(p => p.name.toLowerCase().includes(t));
+        }
 
-        // Cabecera del grupo (Botón de copiar a la izquierda del total)
-        const header = document.createElement('div');
-        header.className = 'summary-group-header';
-        header.innerHTML = `
+        if (products.length === 0) {
+            summaryEmptyState.style.display = 'flex';
+            summaryBuyersList.style.display = 'none';
+            summaryEmptyState.querySelector('h2').textContent = 'Sin ventas adjudicadas';
+            summaryEmptyState.querySelector('p').textContent = 'Asigna una Compradora a tus productos en el listado para ver sus cuentas aquí.';
+            statTotalSoldMoney.textContent = '$0.00';
+            statUniqueBuyers.textContent = '0';
+            statTotalSoldQty.textContent = '0';
+            return;
+        }
+
+        const hasFilteredBuyers = listBuyers.length > 0;
+        const hasFilteredAvail = filteredAvailable.length > 0;
+
+        if (!hasFilteredBuyers && !hasFilteredAvail) {
+            summaryEmptyState.style.display = 'flex';
+            summaryBuyersList.style.display = 'none';
+            summaryEmptyState.querySelector('h2').textContent = 'Sin coincidencias';
+            summaryEmptyState.querySelector('p').textContent = 'No hay cuentas ni productos que coincidan con tu búsqueda.';
+        } else {
+            summaryEmptyState.style.display = 'none';
+            summaryBuyersList.style.display = 'flex';
+        }
+
+        // Ordenar cuentas de compradoras según el modo seleccionado
+        if (buyersSortMode === 'name-asc') {
+            listBuyers.sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
+        } else if (buyersSortMode === 'total-desc') {
+            listBuyers.sort((a, b) => b.totalPrice - a.totalPrice);
+        } else if (buyersSortMode === 'modified-desc') {
+            listBuyers.sort((a, b) => {
+                const dateA = Math.max(...a.products.map(p => getLatestHistoryDate(p).getTime()));
+                const dateB = Math.max(...b.products.map(p => getLatestHistoryDate(p).getTime()));
+                return dateB - dateA;
+            });
+        }
+
+        // Actualizar estadísticas en UI (totales de todas las adjudicadas, sin filtrar)
+        statTotalSoldMoney.textContent = `$${fmtPrice(totalRecaudado)}`;
+        statUniqueBuyers.textContent = Object.keys(groups).length;
+        statTotalSoldQty.textContent = soldProducts.length;
+
+        // Renderizar cada compradora
+        listBuyers.forEach(g => {
+            const groupCard = document.createElement('div');
+            groupCard.className = 'summary-group-card';
+            groupCard.id = `group-card-${g.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+
+            // Contenedor del recibo imprimible
+            const receipt = document.createElement('div');
+            receipt.className = 'summary-card-receipt';
+
+            // Cabecera del grupo (Botón de copiar a la izquierda del total)
+            const header = document.createElement('div');
+            header.className = 'summary-group-header';
+            header.innerHTML = `
             <div class="group-user-info">
                 <i data-lucide="user-check"></i>
                 <div>
@@ -2172,19 +2172,19 @@ function renderSummaryView() {
             </div>
         `;
 
-        // Grid de productos
-        const grid = document.createElement('div');
-        grid.className = 'summary-group-products-grid';
+            // Grid de productos
+            const grid = document.createElement('div');
+            grid.className = 'summary-group-products-grid';
 
-        g.products.forEach(p => {
-            const item = document.createElement('div');
-            item.className = 'summary-product-item';
+            g.products.forEach(p => {
+                const item = document.createElement('div');
+                item.className = 'summary-product-item';
 
-            const imgHtml = p.image
-                ? `<img src="${p.image}" alt="${escHtml(p.name)}" loading="lazy">`
-                : `<div class="card-no-image" style="height:100%;"><i data-lucide="image-off"></i><span style="font-size:0.65rem;">Sin imagen</span></div>`;
+                const imgHtml = p.image
+                    ? `<img src="${p.image}" alt="${escHtml(p.name)}" loading="lazy">`
+                    : `<div class="card-no-image" style="height:100%;"><i data-lucide="image-off"></i><span style="font-size:0.65rem;">Sin imagen</span></div>`;
 
-            item.innerHTML = `
+                item.innerHTML = `
                 <div class="summary-prod-img">
                     ${imgHtml}
                 </div>
@@ -2193,49 +2193,49 @@ function renderSummaryView() {
                     <div class="summary-prod-price">$${escHtml(p.price)}</div>
                 </div>
             `;
-            grid.appendChild(item);
-        });
+                grid.appendChild(item);
+            });
 
-        // Pie de página del recibo (Fecha del último producto modificado)
-        const lastModifiedTime = Math.max(...g.products.map(p => getLatestHistoryDate(p).getTime()));
-        const lastModifiedDate = new Date(lastModifiedTime);
-        const dateStr = lastModifiedDate.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
+            // Pie de página del recibo (Fecha del último producto modificado)
+            const lastModifiedTime = Math.max(...g.products.map(p => getLatestHistoryDate(p).getTime()));
+            const lastModifiedDate = new Date(lastModifiedTime);
+            const dateStr = lastModifiedDate.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
 
-        const footer = document.createElement('div');
-        footer.className = 'summary-group-footer';
-        footer.innerHTML = `
+            const footer = document.createElement('div');
+            footer.className = 'summary-group-footer';
+            footer.innerHTML = `
             <span>Fecha: ${dateStr}</span>
             <span class="summary-group-footer-brand"><i data-lucide="shopping-bag" style="width: 11px; height: 11px; display: inline-block; vertical-align: -1px; margin-right: 3px;"></i>Bonito Bazar</span>
         `;
 
-        receipt.appendChild(header);
-        receipt.appendChild(grid);
-        receipt.appendChild(footer);
+            receipt.appendChild(header);
+            receipt.appendChild(grid);
+            receipt.appendChild(footer);
 
-        groupCard.appendChild(receipt);
-        summaryBuyersList.appendChild(groupCard);
+            groupCard.appendChild(receipt);
+            summaryBuyersList.appendChild(groupCard);
 
-        // Evento de copia de imagen al portapapeles
-        const btnCopy = header.querySelector('.btn-copy-img');
-        btnCopy.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            await copyCardAsImage(receipt, btnCopy);
+            // Evento de copia de imagen al portapapeles
+            const btnCopy = header.querySelector('.btn-copy-img');
+            btnCopy.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                await copyCardAsImage(receipt, btnCopy);
+            });
         });
-    });
 
-    // Renderizar tarjeta de prendas disponibles (si hay)
-    if (filteredAvailable.length > 0) {
-        const availCard = document.createElement('div');
-        availCard.className = 'summary-group-card';
-        availCard.id = 'group-card-disponibles';
+        // Renderizar tarjeta de prendas disponibles (si hay)
+        if (filteredAvailable.length > 0) {
+            const availCard = document.createElement('div');
+            availCard.className = 'summary-group-card';
+            availCard.id = 'group-card-disponibles';
 
-        // Contenedor del recibo imprimible
-        const receipt = document.createElement('div');
-        receipt.className = 'summary-card-receipt';
+            // Contenedor del recibo imprimible
+            const receipt = document.createElement('div');
+            receipt.className = 'summary-card-receipt';
 
-        const header = document.createElement('div');
-        header.className = 'summary-group-header';
-        header.innerHTML = `
+            const header = document.createElement('div');
+            header.className = 'summary-group-header';
+            header.innerHTML = `
             <div class="group-user-info">
                 <i data-lucide="package"></i>
                 <div>
@@ -2250,18 +2250,18 @@ function renderSummaryView() {
             </div>
         `;
 
-        const grid = document.createElement('div');
-        grid.className = 'summary-group-products-grid';
+            const grid = document.createElement('div');
+            grid.className = 'summary-group-products-grid';
 
-        filteredAvailable.forEach(p => {
-            const item = document.createElement('div');
-            item.className = 'summary-product-item';
+            filteredAvailable.forEach(p => {
+                const item = document.createElement('div');
+                item.className = 'summary-product-item';
 
-            const imgHtml = p.image
-                ? `<img src="${p.image}" alt="${escHtml(p.name)}" loading="lazy">`
-                : `<div class="card-no-image" style="height:100%;"><i data-lucide="image-off"></i><span style="font-size:0.65rem;">Sin imagen</span></div>`;
+                const imgHtml = p.image
+                    ? `<img src="${p.image}" alt="${escHtml(p.name)}" loading="lazy">`
+                    : `<div class="card-no-image" style="height:100%;"><i data-lucide="image-off"></i><span style="font-size:0.65rem;">Sin imagen</span></div>`;
 
-            item.innerHTML = `
+                item.innerHTML = `
                 <div class="summary-prod-img">
                     ${imgHtml}
                 </div>
@@ -2270,200 +2270,201 @@ function renderSummaryView() {
                     <div class="summary-prod-price">$${escHtml(p.price)}</div>
                 </div>
             `;
-            grid.appendChild(item);
-        });
+                grid.appendChild(item);
+            });
 
-        // Fecha del último producto disponible modificado
-        const lastModifiedTimeAvail = Math.max(...filteredAvailable.map(p => getLatestHistoryDate(p).getTime()));
-        const lastModifiedDateAvail = new Date(lastModifiedTimeAvail);
-        const dateStrAvail = lastModifiedDateAvail.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
+            // Fecha del último producto disponible modificado
+            const lastModifiedTimeAvail = Math.max(...filteredAvailable.map(p => getLatestHistoryDate(p).getTime()));
+            const lastModifiedDateAvail = new Date(lastModifiedTimeAvail);
+            const dateStrAvail = lastModifiedDateAvail.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
 
-        const footer = document.createElement('div');
-        footer.className = 'summary-group-footer';
-        footer.innerHTML = `
+            const footer = document.createElement('div');
+            footer.className = 'summary-group-footer';
+            footer.innerHTML = `
             <span>Fecha: ${dateStrAvail}</span>
             <span class="summary-group-footer-brand"><i data-lucide="shopping-bag" style="width: 11px; height: 11px; display: inline-block; vertical-align: -1px; margin-right: 3px;"></i>Bonito Bazar</span>
         `;
 
-        receipt.appendChild(header);
-        receipt.appendChild(grid);
-        receipt.appendChild(footer);
+            receipt.appendChild(header);
+            receipt.appendChild(grid);
+            receipt.appendChild(footer);
 
-        availCard.appendChild(receipt);
-        summaryBuyersList.appendChild(availCard);
+            availCard.appendChild(receipt);
+            summaryBuyersList.appendChild(availCard);
 
-        const btnCopy = header.querySelector('.btn-copy-img');
-        btnCopy.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            await copyCardAsImage(receipt, btnCopy);
-        });
-    }
+            const btnCopy = header.querySelector('.btn-copy-img');
+            btnCopy.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                await copyCardAsImage(receipt, btnCopy);
+            });
+        }
 
-    if (window.lucide) lucide.createIcons();
-}
-
-
-async function copyCardAsImage(cardElement, buttonElement) {
-    if (!window.html2canvas) {
-        showToast('error', 'Librería de captura no cargada. Revisa tu conexión.');
-        return;
-    }
-
-    buttonElement.classList.add('loading');
-    buttonElement.innerHTML = '<i data-lucide="loader"></i>';
-    if (window.lucide) lucide.createIcons();
-
-    // Ocultar temporalmente el botón de copiar para que no salga en la captura de imagen
-    const copyBtn = cardElement.querySelector('.btn-copy-img');
-    if (copyBtn) copyBtn.style.visibility = 'hidden';
-
-    // Para un look más premium en la captura, le damos un fondo oscuro sólido (o el que corresponda al tema activo)
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    const bgColor = isDark ? '#161832' : '#ffffff';
-
-    try {
-        const canvas = await html2canvas(cardElement, {
-            backgroundColor: bgColor,
-            scale: 2, // Calidad HD
-            logging: false,
-            useCORS: true
-        });
-
-        canvas.toBlob(async (blob) => {
-            try {
-                if (!blob) throw new Error('No se pudo generar la imagen');
-                await navigator.clipboard.write([
-                    new ClipboardItem({
-                        [blob.type]: blob
-                    })
-                ]);
-                showToast('success', '¡Imagen del resumen copiada! Lista para enviar (Ctrl+V).');
-
-                // Marcar la tarjeta como copiada e icono de check
-                cardElement.classList.add('copied');
-                buttonElement.innerHTML = '<i data-lucide="check"></i>';
-                if (window.lucide) lucide.createIcons();
-
-                // Autoscroll suave a la siguiente tarjeta si existe
-                const nextCard = cardElement.parentElement.nextElementSibling;
-                if (nextCard && nextCard.classList.contains('summary-group-card')) {
-                    setTimeout(() => {
-                        nextCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }, 400);
-                }
-            } catch (err) {
-                showToast('error', 'No se pudo copiar al portapapeles: ' + err.message);
-                buttonElement.innerHTML = '<i data-lucide="image"></i>';
-                if (window.lucide) lucide.createIcons();
-            } finally {
-                if (copyBtn) copyBtn.style.visibility = 'visible';
-                buttonElement.classList.remove('loading');
-            }
-        }, 'image/png');
-    } catch (err) {
-        showToast('error', 'Error al generar la imagen: ' + err.message);
-        if (copyBtn) copyBtn.style.visibility = 'visible';
-        buttonElement.classList.remove('loading');
-        buttonElement.innerHTML = '<i data-lucide="image"></i>';
         if (window.lucide) lucide.createIcons();
     }
-}
 
-// Limpiar estados de copiado y búsqueda en caliente
-function clearCopiedIndicators() {
-    document.querySelectorAll('.summary-card-receipt.copied').forEach(el => {
-        el.classList.remove('copied');
-    });
-    document.querySelectorAll('.btn-copy-img').forEach(btn => {
-        btn.innerHTML = '<i data-lucide="image"></i>';
-    });
 
-    // Limpiar input y estado de búsqueda en el modal
-    if (summarySearchInput) {
-        summarySearchInput.value = '';
-    }
-    summarySearchTerm = '';
+    async function copyCardAsImage(cardElement, buttonElement) {
+        if (!window.html2canvas) {
+            showToast('error', 'Librería de captura no cargada. Revisa tu conexión.');
+            return;
+        }
 
-    if (window.lucide) lucide.createIcons();
-}
+        buttonElement.classList.add('loading');
+        buttonElement.innerHTML = '<i data-lucide="loader"></i>';
+        if (window.lucide) lucide.createIcons();
 
-// ── SISTEMA DE SCROLL FLOTANTE DINÁMICO ───────────────────────
-function getScrollState() {
-    if (summaryView && summaryView.style.display === 'flex') {
-        const current = summaryView.scrollTop;
-        const max = summaryView.scrollHeight - summaryView.clientHeight;
-        return { current, max, container: summaryView };
-    } else {
-        const current = window.scrollY;
-        const max = document.documentElement.scrollHeight - window.innerHeight;
-        return { current, max, container: window };
-    }
-}
+        // Ocultar temporalmente el botón de copiar para que no salga en la captura de imagen
+        const copyBtn = cardElement.querySelector('.btn-copy-img');
+        if (copyBtn) copyBtn.style.visibility = 'hidden';
 
-function updateScrollButton() {
-    if (!btnScrollToggle) return;
+        // Para un look más premium en la captura, le damos un fondo oscuro sólido (o el que corresponda al tema activo)
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const bgColor = isDark ? '#161832' : '#ffffff';
 
-    const { current } = getScrollState();
+        try {
+            const canvas = await html2canvas(cardElement, {
+                backgroundColor: bgColor,
+                scale: 2, // Calidad HD
+                logging: false,
+                useCORS: true
+            });
 
-    if (current < 80) {
-        btnScrollToggle.title = "Ir al final";
-        btnScrollToggle.setAttribute('aria-label', "Ir al final");
-        btnScrollToggle.innerHTML = '<i data-lucide="arrow-down"></i>';
-    } else {
-        btnScrollToggle.title = "Ir al inicio";
-        btnScrollToggle.setAttribute('aria-label', "Ir al inicio");
-        btnScrollToggle.innerHTML = '<i data-lucide="arrow-up"></i>';
-    }
-    if (window.lucide) lucide.createIcons();
-}
+            canvas.toBlob(async (blob) => {
+                try {
+                    if (!blob) throw new Error('No se pudo generar la imagen');
+                    await navigator.clipboard.write([
+                        new ClipboardItem({
+                            [blob.type]: blob
+                        })
+                    ]);
+                    showToast('success', '¡Imagen del resumen copiada! Lista para enviar (Ctrl+V).');
 
-// ── INIT ─────────────────────────────────────────────────────
-async function init() {
-    // Restaurar tema
-    const savedTheme = localStorage.getItem('subastalista_theme') ||
-        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    applyTheme(savedTheme);
+                    // Marcar la tarjeta como copiada e icono de check
+                    cardElement.classList.add('copied');
+                    buttonElement.innerHTML = '<i data-lucide="check"></i>';
+                    if (window.lucide) lucide.createIcons();
 
-    try {
-        await db.open();
-        await loadFromStorage();
-
-        // Cargar nombre de la lista activa en la UI
-        const activeList = lists.find(l => l.id === activeListId);
-        activeListName.textContent = activeList ? activeList.name : 'Lista Principal';
-        
-        // Iniciar la escucha en tiempo real de productos
-        listenToActiveListProducts();
-    } catch (err) {
-        showToast('error', 'Error al inicializar la base de datos.');
-        renderProducts();
-        updateCount();
+                    // Autoscroll suave a la siguiente tarjeta si existe
+                    const nextCard = cardElement.parentElement.nextElementSibling;
+                    if (nextCard && nextCard.classList.contains('summary-group-card')) {
+                        setTimeout(() => {
+                            nextCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 400);
+                    }
+                } catch (err) {
+                    showToast('error', 'No se pudo copiar al portapapeles: ' + err.message);
+                    buttonElement.innerHTML = '<i data-lucide="image"></i>';
+                    if (window.lucide) lucide.createIcons();
+                } finally {
+                    if (copyBtn) copyBtn.style.visibility = 'visible';
+                    buttonElement.classList.remove('loading');
+                }
+            }, 'image/png');
+        } catch (err) {
+            showToast('error', 'Error al generar la imagen: ' + err.message);
+            if (copyBtn) copyBtn.style.visibility = 'visible';
+            buttonElement.classList.remove('loading');
+            buttonElement.innerHTML = '<i data-lucide="image"></i>';
+            if (window.lucide) lucide.createIcons();
+        }
     }
 
-    // Inicializar listeners del scroll flotante
-    window.addEventListener('scroll', updateScrollButton);
-    if (summaryView) {
-        summaryView.addEventListener('scroll', updateScrollButton);
-    }
-
-    if (btnScrollToggle) {
-        btnScrollToggle.addEventListener('click', () => {
-            const { current, max, container } = getScrollState();
-            if (current < 80) {
-                container.scrollTo({ top: max, behavior: 'smooth' });
-            } else {
-                container.scrollTo({ top: 0, behavior: 'smooth' });
-            }
+    // Limpiar estados de copiado y búsqueda en caliente
+    function clearCopiedIndicators() {
+        document.querySelectorAll('.summary-card-receipt.copied').forEach(el => {
+            el.classList.remove('copied');
         });
+        document.querySelectorAll('.btn-copy-img').forEach(btn => {
+            btn.innerHTML = '<i data-lucide="image"></i>';
+        });
+
+        // Limpiar input y estado de búsqueda en el modal
+        if (summarySearchInput) {
+            summarySearchInput.value = '';
+        }
+        summarySearchTerm = '';
+
+        if (window.lucide) lucide.createIcons();
     }
 
-    updateScrollButton();
+    // ── SISTEMA DE SCROLL FLOTANTE DINÁMICO ───────────────────────
+    function getScrollState() {
+        if (summaryView && summaryView.style.display === 'flex') {
+            const current = summaryView.scrollTop;
+            const max = summaryView.scrollHeight - summaryView.clientHeight;
+            return { current, max, container: summaryView };
+        } else {
+            const current = window.scrollY;
+            const max = document.documentElement.scrollHeight - window.innerHeight;
+            return { current, max, container: window };
+        }
+    }
 
-    if (window.lucide) lucide.createIcons();
-}
+    function updateScrollButton() {
+        if (!btnScrollToggle) return;
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
-    init();
+        const { current } = getScrollState();
+
+        if (current < 80) {
+            btnScrollToggle.title = "Ir al final";
+            btnScrollToggle.setAttribute('aria-label', "Ir al final");
+            btnScrollToggle.innerHTML = '<i data-lucide="arrow-down"></i>';
+        } else {
+            btnScrollToggle.title = "Ir al inicio";
+            btnScrollToggle.setAttribute('aria-label', "Ir al inicio");
+            btnScrollToggle.innerHTML = '<i data-lucide="arrow-up"></i>';
+        }
+        if (window.lucide) lucide.createIcons();
+    }
+
+    // ── INIT ─────────────────────────────────────────────────────
+    async function init() {
+        // Restaurar tema
+        const savedTheme = localStorage.getItem('subastalista_theme') ||
+            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        applyTheme(savedTheme);
+
+        try {
+            await db.open();
+            await loadFromStorage();
+
+            // Cargar nombre de la lista activa en la UI
+            const activeList = lists.find(l => l.id === activeListId);
+            activeListName.textContent = activeList ? activeList.name : 'Lista Principal';
+
+            // Iniciar la escucha en tiempo real de productos
+            listenToActiveListProducts();
+        } catch (err) {
+            showToast('error', 'Error al inicializar la base de datos.');
+            renderProducts();
+            updateCount();
+        }
+
+        // Inicializar listeners del scroll flotante
+        window.addEventListener('scroll', updateScrollButton);
+        if (summaryView) {
+            summaryView.addEventListener('scroll', updateScrollButton);
+        }
+
+        if (btnScrollToggle) {
+            btnScrollToggle.addEventListener('click', () => {
+                const { current, max, container } = getScrollState();
+                if (current < 80) {
+                    container.scrollTo({ top: max, behavior: 'smooth' });
+                } else {
+                    container.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            });
+        }
+
+        updateScrollButton();
+
+        if (window.lucide) lucide.createIcons();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
 }
