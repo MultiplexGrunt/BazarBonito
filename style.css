@@ -660,7 +660,7 @@ kbd.kbd-hint {
 .products-column-list {
     display: grid;
     grid-template-columns: repeat(2, 1fr); /* 2 columnas de grilla por defecto */
-    gap: 12px;
+    gap: 10px;
     min-height: 150px;
 }
 
@@ -698,7 +698,7 @@ kbd.kbd-hint {
 /* Imagen de la tarjeta (superior, grande e íntegra con object-fit cover) */
 .card-image {
     width: 100%;
-    height: 170px; /* Altura de imagen proporcionada y estética para 2 columnas */
+    height: 130px; /* Altura compacta y balanceada para las tarjetas */
     flex-shrink: 0;
     background: #08080f;
     position: relative;
@@ -749,14 +749,14 @@ kbd.kbd-hint {
 
 /* Info de la tarjeta (inferior) */
 .card-info {
-    padding: 12px 14px;
+    padding: 8px 10px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
 }
 .card-name {
     font-family: var(--font-display);
-    font-size: 0.95rem;
+    font-size: 0.88rem;
     font-weight: 700;
     color: var(--text-1);
     white-space: normal;
@@ -764,7 +764,7 @@ kbd.kbd-hint {
 }
 .card-price {
     font-family: var(--font-display);
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 900;
     background: linear-gradient(90deg, var(--accent-h), #60a5fa);
     -webkit-background-clip: text;
@@ -2335,16 +2335,20 @@ kbd.kbd-hint {
 @media (max-width: 640px) {
     .products-column-list {
         grid-template-columns: repeat(2, 1fr) !important; /* Cuadrícula a 2 columnas en móviles */
-        gap: 10px !important;
+        gap: 8px !important;
     }
     .card-image {
-        height: 160px !important; /* Tamaño de imagen compacto y estético para móviles */
+        height: 110px !important; /* Altura compacta y proporcional para móvil */
     }
     .card-info {
-        padding: 10px !important;
+        padding: 6px 8px !important;
+        gap: 2px !important;
+    }
+    .card-name {
+        font-size: 0.82rem !important;
     }
     .card-price {
-        font-size: 1.1rem !important;
+        font-size: 1.0rem !important;
     }
 }
 
@@ -2352,10 +2356,20 @@ kbd.kbd-hint {
 @media (min-width: 1024px) {
     .products-column-list {
         grid-template-columns: repeat(3, 1fr) !important; /* 3 columnas fijas en PC */
-        gap: 16px !important;
+        gap: 12px !important;
     }
     .card-image {
-        height: 190px !important; /* Proporción ideal y balanceada para 3 columnas en pantallas grandes */
+        height: 140px !important; /* Altura compacta y balanceada para 3 columnas en PC */
+    }
+    .card-info {
+        padding: 8px 10px !important;
+        gap: 4px !important;
+    }
+    .card-name {
+        font-size: 0.88rem !important;
+    }
+    .card-price {
+        font-size: 1.1rem !important;
     }
 }
 
