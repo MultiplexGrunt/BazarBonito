@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=16">
+    <link rel="stylesheet" href="style.css?v=17">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 </head>
@@ -85,6 +85,9 @@
                 </button>
                 <button id="btn-show-summary" class="btn-icon" title="Cuentas por Compradora" aria-label="Cuentas por Compradora">
                     <i data-lucide="receipt"></i>
+                </button>
+                <button id="btn-show-deliveries" class="btn-icon" title="Control de Entregas" aria-label="Control de Entregas" style="display: none;">
+                    <i data-lucide="truck"></i>
                 </button>
                 <div class="tools-selector-container">
                     <button id="btn-tools-select" class="btn-icon" title="Herramientas y Respaldo" aria-haspopup="true" aria-expanded="false">
@@ -470,7 +473,60 @@
         </div>
     </div>
 
+    <!-- ── VISTA DE CONTROL DE ENTREGAS (PANTALLA COMPLETA) ── -->
+    <div id="deliveries-view" class="summary-view-backdrop" style="display:none;">
+        <div class="summary-view-container">
+            <header class="summary-view-header">
+                <div class="summary-title-section">
+                    <i data-lucide="truck" class="header-icon"></i>
+                    <div>
+                        <h1>Control de Entregas</h1>
+                        <p>Gestión de pagos, métodos y lugares de entrega</p>
+                    </div>
+                </div>
+                <!-- Buscador de entregas -->
+                <div class="summary-search-wrap search-wrap" style="flex: 1; max-width: 320px; margin: 0 16px;">
+                    <i data-lucide="search" class="search-ico"></i>
+                    <input type="text" id="delivery-search-input" placeholder="Buscar compradora o lugar..." aria-label="Buscar entregas">
+                </div>
+                <div class="summary-header-actions" style="display: flex; align-items: center; gap: 8px;">
+                    <button id="btn-close-deliveries" class="btn-modal-close" aria-label="Cerrar vista de entregas">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Métricas rápidas de entregas -->
+            <div class="summary-stats-grid">
+                <div class="summary-stat-card">
+                    <span id="delivery-stat-total-money" class="stat-value">$0.00</span>
+                    <span class="stat-label">Total Vendido</span>
+                </div>
+                <div class="summary-stat-card">
+                    <span id="delivery-stat-paid-qty" class="stat-value">0 / 0</span>
+                    <span class="stat-label">Compradoras Pagadas</span>
+                </div>
+                <div class="summary-stat-card">
+                    <span id="delivery-stat-pending-qty" class="stat-value">$0.00</span>
+                    <span class="stat-label">Por Cobrar</span>
+                </div>
+            </div>
+
+            <!-- Listado de entregas por compradora -->
+            <div id="deliveries-list" class="deliveries-list">
+                <!-- Se renderiza dinámicamente -->
+            </div>
+
+            <!-- Vista vacía si no hay compradoras -->
+            <div id="deliveries-empty-state" class="empty-state" style="display:none;">
+                <div class="empty-illustration"><i data-lucide="package"></i></div>
+                <h2>Sin entregas que mostrar</h2>
+                <p>Adjudica productos a compradoras para ver e iniciar la gestión de entregas.</p>
+            </div>
+        </div>
+    </div>
+
     <div id="toast" class="toast" aria-live="polite"></div>
-    <script type="module" src="app.js?v=16"></script>
+    <script type="module" src="app.js?v=17"></script>
 </body>
 </html>

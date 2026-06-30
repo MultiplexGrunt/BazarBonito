@@ -2541,9 +2541,266 @@ kbd.kbd-hint {
         box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.1), 
                     0 0 16px rgba(236, 72, 153, 0.35);
     }
-    100% {
-        border-color: var(--border);
-        box-shadow: none;
+}
+
+/* ── SECCIÓN DE CONTROL DE ENTREGAS ── */
+.deliveries-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 16px;
+    padding-bottom: 30px;
+}
+
+.delivery-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px 20px;
+    gap: 20px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: var(--t);
+}
+
+.delivery-row:hover {
+    border-color: rgba(124, 58, 237, 0.25);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+}
+
+[data-theme="light"] .delivery-row:hover {
+    border-color: rgba(236, 72, 153, 0.25);
+}
+
+/* Columna de información de la compradora */
+.delivery-buyer-info {
+    flex: 2;
+    min-width: 200px;
+}
+
+.delivery-buyer-name {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--text-1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.delivery-buyer-total {
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: var(--text-1);
+    margin-top: 4px;
+    background: linear-gradient(90deg, var(--accent-h), #60a5fa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+[data-theme="light"] .delivery-buyer-total {
+    background: linear-gradient(90deg, var(--accent), #f472b6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.delivery-buyer-items-hint {
+    font-size: 0.76rem;
+    color: var(--text-3);
+    margin-top: 3px;
+}
+
+/* Controles de entrega en fila flexible */
+.delivery-controls {
+    flex: 3;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+/* Selector de lugar de entrega */
+.delivery-place-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 140px;
+}
+
+.delivery-place-selector label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.delivery-place-selector select {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+    font-size: 0.84rem;
+    color: var(--text-1);
+    outline: none;
+    cursor: pointer;
+    transition: var(--t);
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 14px;
+    padding-right: 30px;
+}
+
+[data-theme="light"] .delivery-place-selector select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+}
+
+.delivery-place-selector select:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.1);
+}
+
+/* Control de estatus (Pagado/Pendiente) */
+.delivery-status-control {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.delivery-status-control span {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.btn-status-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    font-size: 0.84rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--t);
+    border: 1px solid transparent;
+}
+
+/* Estado pendiente */
+.btn-status-toggle.status-pendiente {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.25);
+    color: #ef4444;
+}
+
+.btn-status-toggle.status-pendiente:hover {
+    background: rgba(239, 68, 68, 0.16);
+    border-color: rgba(239, 68, 68, 0.45);
+}
+
+/* Estado pagado */
+.btn-status-toggle.status-pagado {
+    background: rgba(16, 185, 129, 0.08);
+    border-color: rgba(16, 185, 129, 0.25);
+    color: #10b981;
+}
+
+.btn-status-toggle.status-pagado:hover {
+    background: rgba(16, 185, 129, 0.16);
+    border-color: rgba(16, 185, 129, 0.45);
+}
+
+.btn-status-toggle svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Tipo de pago (Efectivo/Transferencia) */
+.delivery-payment-control {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.delivery-payment-control label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.payment-options-segment {
+    display: inline-flex;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2px;
+}
+
+.btn-payment-option {
+    background: transparent;
+    border: none;
+    color: var(--text-3);
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: var(--t);
+}
+
+.btn-payment-option:hover {
+    color: var(--text-1);
+}
+
+/* Opción seleccionada */
+.btn-payment-option.active {
+    background: var(--accent-h);
+    color: white;
+}
+
+[data-theme="light"] .btn-payment-option.active {
+    background: var(--accent);
+}
+
+/* Estado inhabilitado (si está pendiente de pago) */
+.payment-options-segment.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+/* Responsive para la fila de entrega */
+@media (max-width: 768px) {
+    .delivery-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 14px;
+        padding: 14px;
+    }
+    
+    .delivery-controls {
+        justify-content: flex-start;
+        gap: 12px;
+    }
+
+    .delivery-place-selector,
+    .delivery-status-control,
+    .delivery-payment-control {
+        flex: 1;
+        min-width: 120px;
     }
 }
 

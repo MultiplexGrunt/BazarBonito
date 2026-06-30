@@ -57,6 +57,9 @@ let pendingImage = null;       // imagen capturada esperando ser guardada
 let editingImageBase64 = null; // imagen en el modal de edición
 let unsubscribeActiveList = null; // función para desvincular el listener en tiempo real
 let lastUpdatedProductId = null; // ID del producto que se acaba de agregar o actualizar
+let activeDeliveries = [];     // entregas de la lista activa
+let unsubscribeActiveDeliveries = null; // función para desvincular el listener de entregas
+let deliverySearchTerm = '';   // término de búsqueda de entregas
 
 /**
  * Escucha los productos de la lista activa en tiempo real desde Firestore
@@ -106,6 +109,37 @@ function listenToActiveListProducts() {
         },
         (err) => {
             console.error("Error en listener en tiempo real de Firestore:", err);
+        }
+    );
+}
+
+/**
+ * Escucha las entregas de la lista activa en tiempo real desde Firestore
+ */
+function listenToActiveListDeliveries() {
+    if (unsubscribeActiveDeliveries) {
+        unsubscribeActiveDeliveries();
+        unsubscribeActiveDeliveries = null;
+    }
+
+    if (!activeListId) return;
+
+    unsubscribeActiveDeliveries = onSnapshot(
+        collection(firestoreDb, "listas", activeListId, "entregas"),
+        (snapshot) => {
+            const updatedDeliveries = [];
+            snapshot.forEach(d => {
+                updatedDeliveries.push(d.data());
+            });
+            activeDeliveries = updatedDeliveries;
+
+            // Renderizar la vista de entregas si está visible
+            if (deliveriesView && deliveriesView.style.display === 'flex') {
+                renderDeliveries();
+            }
+        },
+        (err) => {
+            console.error("Error en listener de entregas en Firestore:", err);
         }
     );
 }
@@ -213,6 +247,29 @@ const db = {
         }
     },
 
+    async saveDelivery(listId, delivery) {
+        try {
+            await setDoc(doc(firestoreDb, "listas", listId, "entregas", delivery.compradora), delivery);
+        } catch (err) {
+            console.error("Error al guardar entrega:", err);
+            throw err;
+        }
+    },
+
+    async getDeliveries(listId) {
+        try {
+            const querySnapshot = await getDocs(collection(firestoreDb, "listas", listId, "entregas"));
+            const deliveries = [];
+            querySnapshot.forEach(d => {
+                deliveries.push(d.data());
+            });
+            return deliveries;
+        } catch (err) {
+            console.error("Error al obtener entregas:", err);
+            return [];
+        }
+    },
+
     async getConfig(key) {
         return localStorage.getItem(`bonitobazar_${key}`);
     },
@@ -233,10 +290,10 @@ const db = {
                 await this.deleteList(d.id);
             }
 
-            // Subir las nuevas listas y sus productos uno a uno
+            // Subir las nuevas listas, sus productos y sus entregas uno a uno
             let lIdx = 1;
             for (const lista of listsArray) {
-                const { products: listProducts, ...listaMeta } = lista;
+                const { products: listProducts, entregas: listEntregas, ...listaMeta } = lista;
                 showToast('info', `Restaurando lista ${lIdx} de ${listsArray.length}...`);
 
                 // Guardar la metadata de la lista
@@ -254,6 +311,14 @@ const db = {
                         pIdx++;
                     }
                 }
+
+                // Restaurar entregas de la lista si existen en el backup
+                if (Array.isArray(listEntregas)) {
+                    for (const entrega of listEntregas) {
+                        await setDoc(doc(firestoreDb, "listas", lista.id, "entregas", entrega.compradora), entrega);
+                    }
+                }
+
                 lIdx++;
             }
 
@@ -524,6 +589,17 @@ const imagePreviewPrice = document.getElementById('image-preview-price');
 const imagePreviewTime = document.getElementById('image-preview-time');
 const btnCloseImagePreview = document.getElementById('btn-close-image-preview');
 
+// Control de entregas
+const btnShowDeliveries = document.getElementById('btn-show-deliveries');
+const btnCloseDeliveries = document.getElementById('btn-close-deliveries');
+const deliveriesView = document.getElementById('deliveries-view');
+const deliverySearchInput = document.getElementById('delivery-search-input');
+const deliveriesList = document.getElementById('deliveries-list');
+const deliveriesEmptyState = document.getElementById('deliveries-empty-state');
+const deliveryStatTotalMoney = document.getElementById('delivery-stat-total-money');
+const deliveryStatPaidQty = document.getElementById('delivery-stat-paid-qty');
+const deliveryStatPendingQty = document.getElementById('delivery-stat-pending-qty');
+
 // ── AUTENTICACIÓN Y CONTROL DE ROLES (Google Sign-In) ─────────
 
 /**
@@ -568,6 +644,9 @@ function updateRoleUI() {
     // 5. Botón de cerrar sesión en el header
     if (btnLogout) {
         btnLogout.style.display = isAdmin ? 'inline-flex' : 'none';
+    }
+    if (btnShowDeliveries) {
+        btnShowDeliveries.style.display = isAdmin ? 'inline-flex' : 'none';
     }
 
     // 6. Botón de agregar producto
@@ -1645,6 +1724,7 @@ function createProductCard(p, i) {
 
         // Iniciar listener de productos en tiempo real para esta nueva lista
         listenToActiveListProducts();
+        listenToActiveListDeliveries();
 
         showToast('success', `Cargada la lista: “${activeList ? activeList.name : ''}”`);
     }
@@ -1743,6 +1823,7 @@ function createProductCard(p, i) {
 
             // Iniciar el listener de la nueva lista seleccionada
             listenToActiveListProducts();
+            listenToActiveListDeliveries();
 
             showToast('success', 'Lista eliminada correctamente.');
         } catch (err) {
@@ -1846,8 +1927,13 @@ function createProductCard(p, i) {
                 return;
             }
 
+            // Obtener las entregas de cada lista y agregarlas al backup
+            for (const lista of allLists) {
+                lista.entregas = await db.getDeliveries(lista.id);
+            }
+
             const backupData = {
-                version: 1,
+                version: 2,
                 exportedAt: new Date().toISOString(),
                 activeListId: activeId,
                 lists: allLists
@@ -2443,6 +2529,7 @@ function createProductCard(p, i) {
 
             // Iniciar la escucha en tiempo real de productos
             listenToActiveListProducts();
+            listenToActiveListDeliveries();
         } catch (err) {
             showToast('error', 'Error al inicializar la base de datos.');
             renderProducts();
@@ -2469,6 +2556,225 @@ function createProductCard(p, i) {
         updateScrollButton();
 
         if (window.lucide) lucide.createIcons();
+    }
+
+    // ── SECCIÓN ENTREGAS ──────────────────────────────────────────
+
+    function openDeliveriesView() {
+        renderDeliveries();
+        deliveriesView.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function closeDeliveriesView() {
+        deliveriesView.style.display = 'none';
+        document.body.style.overflow = '';
+        if (deliverySearchInput) deliverySearchInput.value = '';
+        deliverySearchTerm = '';
+    }
+
+    function renderDeliveries() {
+        // Construir mapa de compradora -> { total, items }
+        const buyerMap = {};
+        products.forEach(p => {
+            if (!p.compradora) return;
+            const name = p.compradora.trim();
+            if (!buyerMap[name]) buyerMap[name] = { total: 0, items: [] };
+            buyerMap[name].total += parseFloat(p.price) || 0;
+            buyerMap[name].items.push(p.name);
+        });
+
+        const buyerNames = Object.keys(buyerMap).sort((a, b) => a.localeCompare(b, 'es'));
+
+        // Aplicar búsqueda
+        const term = deliverySearchTerm.toLowerCase();
+        const filtered = buyerNames.filter(name => {
+            if (!term) return true;
+            return name.toLowerCase().includes(term);
+        });
+
+        // Calcular métricas rápidas
+        let totalMoney = 0;
+        let paidCount = 0;
+        let pendingMoney = 0;
+        buyerNames.forEach(name => {
+            totalMoney += buyerMap[name].total;
+            const delivery = activeDeliveries.find(d => d.compradora === name);
+            if (delivery && delivery.status === 'pagado') {
+                paidCount++;
+            } else {
+                pendingMoney += buyerMap[name].total;
+            }
+        });
+
+        if (deliveryStatTotalMoney) deliveryStatTotalMoney.textContent = `$${totalMoney.toFixed(2)}`;
+        if (deliveryStatPaidQty) deliveryStatPaidQty.textContent = `${paidCount} / ${buyerNames.length}`;
+        if (deliveryStatPendingQty) deliveryStatPendingQty.textContent = `$${pendingMoney.toFixed(2)}`;
+
+        if (filtered.length === 0) {
+            deliveriesList.style.display = 'none';
+            deliveriesEmptyState.style.display = 'block';
+            return;
+        }
+
+        deliveriesList.style.display = 'flex';
+        deliveriesEmptyState.style.display = 'none';
+        deliveriesList.innerHTML = '';
+
+        filtered.forEach(name => {
+            const buyerData = buyerMap[name];
+            const delivery = activeDeliveries.find(d => d.compradora === name) || {
+                compradora: name,
+                status: 'pendiente',
+                paymentType: '',
+                lugar: '',
+                updatedAt: new Date().toISOString()
+            };
+
+            const isPagado = delivery.status === 'pagado';
+            const statusClass = isPagado ? 'status-pagado' : 'status-pendiente';
+            const statusIcon = isPagado ? 'check-circle' : 'clock';
+            const statusLabel = isPagado ? 'Pagado' : 'Pendiente';
+            const paymentDisabledClass = isPagado ? '' : 'disabled';
+
+            const row = document.createElement('div');
+            row.className = 'delivery-row';
+            row.dataset.compradora = name;
+
+            row.innerHTML = `
+                <div class="delivery-buyer-info">
+                    <div class="delivery-buyer-name">
+                        <i data-lucide="user"></i>
+                        ${escHtml(name)}
+                    </div>
+                    <div class="delivery-buyer-total">$${buyerData.total.toFixed(2)}</div>
+                    <div class="delivery-buyer-items-hint">${buyerData.items.length} prenda${buyerData.items.length !== 1 ? 's' : ''}: ${buyerData.items.map(escHtml).join(', ')}</div>
+                </div>
+                <div class="delivery-controls">
+                    <div class="delivery-place-selector">
+                        <label>Lugar de Entrega</label>
+                        <select class="delivery-place-select" data-compradora="${escHtml(name)}">
+                            <option value="">— Sin especificar —</option>
+                            <option value="Tuxtla" ${delivery.lugar === 'Tuxtla' ? 'selected' : ''}>Tuxtla</option>
+                            <option value="Berriozabal" ${delivery.lugar === 'Berriozabal' ? 'selected' : ''}>Berriozabal</option>
+                            <option value="Patria" ${delivery.lugar === 'Patria' ? 'selected' : ''}>Patria</option>
+                            <option value="Shanka" ${delivery.lugar === 'Shanka' ? 'selected' : ''}>Shanka</option>
+                            <option value="Otro" ${delivery.lugar === 'Otro' ? 'selected' : ''}>Otro</option>
+                        </select>
+                    </div>
+                    <div class="delivery-status-control">
+                        <span>Estatus</span>
+                        <button class="btn-status-toggle ${statusClass}" data-compradora="${escHtml(name)}">
+                            <i data-lucide="${statusIcon}"></i>
+                            ${statusLabel}
+                        </button>
+                    </div>
+                    <div class="delivery-payment-control">
+                        <label>Tipo de Pago</label>
+                        <div class="payment-options-segment ${paymentDisabledClass}">
+                            <button class="btn-payment-option ${delivery.paymentType === 'efectivo' ? 'active' : ''}" data-compradora="${escHtml(name)}" data-type="efectivo">
+                                Efectivo
+                            </button>
+                            <button class="btn-payment-option ${delivery.paymentType === 'transferencia' ? 'active' : ''}" data-compradora="${escHtml(name)}" data-type="transferencia">
+                                Transferencia
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            deliveriesList.appendChild(row);
+        });
+
+        // Registrar eventos después de pintar
+        deliveriesList.querySelectorAll('.btn-status-toggle').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const compradora = btn.dataset.compradora;
+                const existing = activeDeliveries.find(d => d.compradora === compradora) || {
+                    compradora, status: 'pendiente', paymentType: '', lugar: '', updatedAt: new Date().toISOString()
+                };
+                const newStatus = existing.status === 'pagado' ? 'pendiente' : 'pagado';
+                const updated = { ...existing, status: newStatus, updatedAt: new Date().toISOString() };
+
+                const idx = activeDeliveries.findIndex(d => d.compradora === compradora);
+                if (idx >= 0) activeDeliveries[idx] = updated;
+                else activeDeliveries.push(updated);
+
+                renderDeliveries();
+                if (window.lucide) lucide.createIcons();
+
+                try {
+                    await db.saveDelivery(activeListId, updated);
+                } catch (err) {
+                    showToast('error', 'Error al guardar estatus: ' + err.message);
+                }
+            });
+        });
+
+        deliveriesList.querySelectorAll('.btn-payment-option').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const compradora = btn.dataset.compradora;
+                const type = btn.dataset.type;
+                const existing = activeDeliveries.find(d => d.compradora === compradora) || {
+                    compradora, status: 'pendiente', paymentType: '', lugar: '', updatedAt: new Date().toISOString()
+                };
+                const newType = existing.paymentType === type ? '' : type;
+                const updated = { ...existing, paymentType: newType, updatedAt: new Date().toISOString() };
+
+                const idx = activeDeliveries.findIndex(d => d.compradora === compradora);
+                if (idx >= 0) activeDeliveries[idx] = updated;
+                else activeDeliveries.push(updated);
+
+                renderDeliveries();
+                if (window.lucide) lucide.createIcons();
+
+                try {
+                    await db.saveDelivery(activeListId, updated);
+                } catch (err) {
+                    showToast('error', 'Error al guardar tipo de pago: ' + err.message);
+                }
+            });
+        });
+
+        deliveriesList.querySelectorAll('.delivery-place-select').forEach(sel => {
+            sel.addEventListener('change', async () => {
+                const compradora = sel.dataset.compradora;
+                const lugar = sel.value;
+                const existing = activeDeliveries.find(d => d.compradora === compradora) || {
+                    compradora, status: 'pendiente', paymentType: '', lugar: '', updatedAt: new Date().toISOString()
+                };
+                const updated = { ...existing, lugar, updatedAt: new Date().toISOString() };
+
+                const idx = activeDeliveries.findIndex(d => d.compradora === compradora);
+                if (idx >= 0) activeDeliveries[idx] = updated;
+                else activeDeliveries.push(updated);
+
+                try {
+                    await db.saveDelivery(activeListId, updated);
+                    showToast('success', `Lugar de entrega actualizado para ${compradora}.`);
+                } catch (err) {
+                    showToast('error', 'Error al guardar lugar: ' + err.message);
+                }
+            });
+        });
+
+        if (window.lucide) lucide.createIcons();
+    }
+
+    // Eventos del panel de entregas
+    if (btnShowDeliveries) {
+        btnShowDeliveries.addEventListener('click', openDeliveriesView);
+    }
+    if (btnCloseDeliveries) {
+        btnCloseDeliveries.addEventListener('click', closeDeliveriesView);
+    }
+    if (deliverySearchInput) {
+        deliverySearchInput.addEventListener('input', () => {
+            deliverySearchTerm = deliverySearchInput.value.trim();
+            renderDeliveries();
+            if (window.lucide) lucide.createIcons();
+        });
     }
 
 if (document.readyState === 'loading') {
