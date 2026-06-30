@@ -1082,32 +1082,34 @@ function renderProducts() {
             const card = createProductCard(p, i);
             productsSold.appendChild(card);
         });
-        if (window.lucide) lucide.createIcons();
-
-        // Limpiar el ID después de renderizar para que no brille en futuros filtrados/búsquedas
-        lastUpdatedProductId = null;
     }
 
-    // Función auxiliar para generar la tarjeta
-    function createProductCard(p, i) {
-        const card = document.createElement('article');
-        card.className = 'product-card';
-        if (p.id === lastUpdatedProductId) {
-            card.classList.add('just-updated');
-        }
-        card.dataset.id = p.id;
-        card.setAttribute('tabindex', '0');
-        card.setAttribute('aria-label', `Producto: ${escHtml(p.name)}, $${p.price}`);
+    if (window.lucide) lucide.createIcons();
 
-        const imgHtml = p.image
-            ? `<img src="${p.image}" alt="${escHtml(p.name)}" loading="lazy">`
-            : `<div class="card-no-image"><i data-lucide="image-off"></i><span>Sin imagen</span></div>`;
+    // Limpiar el ID después de renderizar para que no brille en futuros filtrados/búsquedas
+    lastUpdatedProductId = null;
+}
 
-        const compBadge = p.compradora
-            ? `<div class="card-compradora-badge"><i data-lucide="user-check"></i><span>${escHtml(p.compradora)}</span></div>`
-            : '';
+// Función auxiliar para generar la tarjeta
+function createProductCard(p, i) {
+    const card = document.createElement('article');
+    card.className = 'product-card';
+    if (p.id === lastUpdatedProductId) {
+        card.classList.add('just-updated');
+    }
+    card.dataset.id = p.id;
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('aria-label', `Producto: ${escHtml(p.name)}, $${p.price}`);
 
-        card.innerHTML = `
+    const imgHtml = p.image
+        ? `<img src="${p.image}" alt="${escHtml(p.name)}" loading="lazy">`
+        : `<div class="card-no-image"><i data-lucide="image-off"></i><span>Sin imagen</span></div>`;
+
+    const compBadge = p.compradora
+        ? `<div class="card-compradora-badge"><i data-lucide="user-check"></i><span>${escHtml(p.compradora)}</span></div>`
+        : '';
+
+    card.innerHTML = `
         <div class="card-image">
             ${imgHtml}
             ${compBadge}
@@ -1119,34 +1121,34 @@ function renderProducts() {
         </div>
     `;
 
-        // Hover preview sobre la imagen (solo para administrador)
-        if (p.image && isAdmin) {
-            const imgDiv = card.querySelector('.card-image');
-            imgDiv.addEventListener('mouseenter', e => showHoverPreview(p.image, e));
-            imgDiv.addEventListener('mousemove', e => positionHoverPreview(e));
-            imgDiv.addEventListener('mouseleave', () => hideHoverPreview());
-        }
+    // Hover preview sobre la imagen (solo para administrador)
+    if (p.image && isAdmin) {
+        const imgDiv = card.querySelector('.card-image');
+        imgDiv.addEventListener('mouseenter', e => showHoverPreview(p.image, e));
+        imgDiv.addEventListener('mousemove', e => positionHoverPreview(e));
+        imgDiv.addEventListener('mouseleave', () => hideHoverPreview());
+    }
 
-        card.addEventListener('click', () => {
+    card.addEventListener('click', () => {
+        if (isAdmin) {
+            openEditModal(p.id);
+        } else {
+            openImagePreview(p);
+        }
+    });
+    card.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
             if (isAdmin) {
                 openEditModal(p.id);
             } else {
                 openImagePreview(p);
             }
-        });
-        card.addEventListener('keydown', e => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                if (isAdmin) {
-                    openEditModal(p.id);
-                } else {
-                    openImagePreview(p);
-                }
-            }
-        });
+        }
+    });
 
-        return card;
-    }
+    return card;
+}
 
     function updateCount() {
         totalCount.textContent = products.length;
@@ -2462,9 +2464,8 @@ function renderProducts() {
         if (window.lucide) lucide.createIcons();
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
 }
