@@ -1264,12 +1264,24 @@ kbd.kbd-hint {
     align-items: center;
     justify-content: center;
     transition: var(--t);
+    cursor: pointer;
+}
+
+.brand-badge-count:hover {
+    background: rgba(124, 58, 237, 0.25);
+    border-color: var(--accent-h);
+    transform: scale(1.08);
 }
 
 [data-theme="light"] .brand-badge-count {
     background: rgba(236, 72, 153, 0.1);
     color: var(--accent);
     border-color: rgba(236, 72, 153, 0.2);
+}
+
+[data-theme="light"] .brand-badge-count:hover {
+    background: rgba(236, 72, 153, 0.18);
+    border-color: var(--accent);
 }
 
 /* Selector de Herramientas Estilizado */

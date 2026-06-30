@@ -45,7 +45,7 @@ const googleProvider = new GoogleAuthProvider();
 // Configuración de Administrador
 const ADMIN_EMAIL = "toledooscar96@gmail.com";
 let isAdmin = false;             // Define si el usuario actual es Administrador
-let userRoleDecided = false;     // Si el usuario ya eligió "Visitante" o inició sesión
+let userRoleDecided = true;      // El rol inicia directamente como visitante por defecto
 
 // ── ESTADO ──────────────────────────────────────────────────
 let lists = [];                // todas las listas en memoria
@@ -433,13 +433,9 @@ const btnLogout = document.getElementById('btn-logout');
  * Actualiza de forma reactiva la interfaz del DOM según si el usuario es Admin o Visitante
  */
 function updateRoleUI() {
-    // 1. Mostrar/Ocultar pantalla de bienvenida
-    if (welcomeOverlay) {
-        if (!userRoleDecided && !isAdmin) {
-            welcomeOverlay.style.display = 'flex';
-        } else {
-            welcomeOverlay.style.display = 'none';
-        }
+    // 1. Ocultar pantalla de bienvenida si ya inició sesión como Admin
+    if (welcomeOverlay && isAdmin) {
+        welcomeOverlay.style.display = 'none';
     }
 
     // 2. Alternar clases de rol en el body
@@ -570,11 +566,10 @@ if (btnLoginGoogle) {
 
 if (btnVisitor) {
     btnVisitor.addEventListener('click', () => {
-        isAdmin = false;
-        userRoleDecided = true;
-        showToast('info', 'Entrando en modo de solo lectura (Visitante).');
-        updateRoleUI();
-        renderProducts();
+        if (welcomeOverlay) {
+            welcomeOverlay.style.display = 'none';
+        }
+        showToast('info', 'Sigues en modo de solo lectura (Visitante).');
     });
 }
 
@@ -582,12 +577,26 @@ if (btnLogout) {
     btnLogout.addEventListener('click', async () => {
         if (confirm('¿Cerrar sesión de Administrador?')) {
             try {
-                userRoleDecided = false;
                 await signOut(firebaseAuth);
                 showToast('success', 'Sesión cerrada. Ahora eres visitante.');
             } catch (err) {
                 showToast('error', 'Error al cerrar sesión: ' + err.message);
             }
+        }
+    });
+}
+
+// Abrir modal de inicio de sesión al hacer clic en el badge de total-count
+const totalCountEl = document.getElementById('total-count');
+if (totalCountEl) {
+    totalCountEl.style.cursor = 'pointer';
+    totalCountEl.addEventListener('click', () => {
+        if (!isAdmin) {
+            if (welcomeOverlay) {
+                welcomeOverlay.style.display = 'flex';
+            }
+        } else {
+            showToast('info', 'Ya iniciaste sesión como Administrador.');
         }
     });
 }
