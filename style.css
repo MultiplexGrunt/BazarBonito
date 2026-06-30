@@ -2465,9 +2465,24 @@ kbd.kbd-hint {
     justify-content: center;
     gap: 4px;
     background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    padding: 3px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 3px 12px;
     border-radius: 99px;
+    cursor: pointer;
+    transition: var(--t);
+}
+
+.image-preview-time:hover {
+    background: rgba(124, 58, 237, 0.16);
+    border-color: rgba(124, 58, 237, 0.35);
+    color: var(--accent-h);
+    transform: translateY(-1px);
+}
+
+[data-theme="light"] .image-preview-time:hover {
+    background: rgba(236, 72, 153, 0.1);
+    border-color: rgba(236, 72, 153, 0.25);
+    color: var(--accent);
 }
 
 

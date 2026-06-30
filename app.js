@@ -44,6 +44,7 @@ const googleProvider = new GoogleAuthProvider();
 
 // Configuración de Administrador
 const ADMIN_EMAIL = "toledooscar96@gmail.com";
+const WHATSAPP_GROUP_URL = "https://chat.whatsapp.com/CdKKvGdHXSC3aq9FzARj5H?s=cl&p=a&ilr=2";
 let isAdmin = false;             // Define si el usuario actual es Administrador
 let userRoleDecided = true;      // El rol inicia directamente como visitante por defecto
 
@@ -1272,6 +1273,13 @@ if (btnCloseImagePreview) {
 }
 if (imagePreviewModal) {
     imagePreviewModal.addEventListener('click', e => { if (e.target === imagePreviewModal) closeImagePreview(); });
+}
+if (imagePreviewTime) {
+    imagePreviewTime.addEventListener('click', () => {
+        if (WHATSAPP_GROUP_URL) {
+            window.open(WHATSAPP_GROUP_URL, '_blank');
+        }
+    });
 }
 
 document.addEventListener('keydown', e => {
