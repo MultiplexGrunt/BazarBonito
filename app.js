@@ -10,6 +10,13 @@ import {
     deleteDoc,
     writeBatch
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import {
+    getAuth,
+    signInWithPopup,
+    GoogleAuthProvider,
+    signOut,
+    onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // Configuración de Firebase para tu aplicación web
 const firebaseConfig = {
@@ -30,6 +37,15 @@ const firestoreDb = initializeFirestore(firebaseApp, {
         tabManager: persistentMultipleTabManager()
     })
 });
+
+// Inicializar Firebase Auth y el proveedor de Google
+const firebaseAuth = getAuth(firebaseApp);
+const googleProvider = new GoogleAuthProvider();
+
+// Configuración de Administrador
+const ADMIN_EMAIL = "toledooscar96@gmail.com";
+let isAdmin = false;             // Define si el usuario actual es Administrador
+let userRoleDecided = false;     // Si el usuario ya eligió "Visitante" o inició sesión
 
 // ── ESTADO ──────────────────────────────────────────────────
 let lists = [];                // todas las listas en memoria
@@ -165,6 +181,140 @@ const db = {
         }
     }
 };
+
+// ── AUTENTICACIÓN Y CONTROL DE ROLES (Google Sign-In) ─────────
+
+/**
+ * Actualiza de forma reactiva la interfaz del DOM según si el usuario es Admin o Visitante
+ */
+function updateRoleUI() {
+    // 1. Mostrar/Ocultar pantalla de bienvenida
+    if (welcomeOverlay) {
+        if (!userRoleDecided && !isAdmin) {
+            welcomeOverlay.style.display = 'flex';
+        } else {
+            welcomeOverlay.style.display = 'none';
+        }
+    }
+
+    // 2. Botón de cerrar sesión en el header
+    if (btnLogout) {
+        btnLogout.style.display = isAdmin ? 'inline-flex' : 'none';
+    }
+
+    // 3. Botón de agregar producto
+    if (btnToggleForm) {
+        btnToggleForm.style.display = isAdmin ? 'inline-flex' : 'none';
+    }
+
+    // 4. Selector de herramientas administrativas (engranaje)
+    const toolsContainer = document.querySelector('.tools-selector-container');
+    if (toolsContainer) {
+        toolsContainer.style.display = isAdmin ? 'inline-flex' : 'none';
+    }
+
+    // 5. Botones de acción administrativa en el menú de listas
+    const dropdownActions = document.querySelector('.dropdown-actions');
+    if (dropdownActions) {
+        dropdownActions.style.display = isAdmin ? 'flex' : 'none';
+    }
+    const dropdownDivider = document.querySelector('.dropdown-divider');
+    if (dropdownDivider) {
+        dropdownDivider.style.display = isAdmin ? 'block' : 'none';
+    }
+
+    // 6. Comportamiento interactivo en el modal de edición/detalle de producto
+    if (editModal && editModal.style.display === 'flex') {
+        const titleEl = document.getElementById('edit-modal-title');
+        const submitBtn = editForm.querySelector('.btn-save-edit');
+        const overlayImgAction = document.querySelector('.edit-image-overlay');
+        const linkBtnImgAction = document.getElementById('btn-edit-add-image');
+
+        if (isAdmin) {
+            if (titleEl) titleEl.textContent = "Editar Producto";
+            editName.disabled = false;
+            editPrice.disabled = false;
+            editCompradora.disabled = false;
+            if (submitBtn) submitBtn.style.display = 'inline-flex';
+            if (btnDeleteProduct) btnDeleteProduct.style.display = 'inline-flex';
+            if (overlayImgAction) overlayImgAction.style.display = 'flex';
+            if (linkBtnImgAction) linkBtnImgAction.style.display = 'inline-block';
+        } else {
+            if (titleEl) titleEl.textContent = "Detalle del Producto";
+            editName.disabled = true;
+            editPrice.disabled = true;
+            editCompradora.disabled = true;
+            if (submitBtn) submitBtn.style.display = 'none';
+            if (btnDeleteProduct) btnDeleteProduct.style.display = 'none';
+            if (overlayImgAction) overlayImgAction.style.display = 'none';
+            if (linkBtnImgAction) linkBtnImgAction.style.display = 'none';
+        }
+    }
+}
+
+// Escuchar cambios de estado en Firebase Auth
+onAuthStateChanged(firebaseAuth, async (user) => {
+    if (user) {
+        if (user.email === ADMIN_EMAIL) {
+            isAdmin = true;
+            userRoleDecided = true;
+            showToast('success', `¡Bienvenido Administrador: ${user.displayName || user.email}!`);
+        } else {
+            // Usuario autenticado con Google pero no es el administrador
+            isAdmin = false;
+            userRoleDecided = true;
+            showToast('error', 'Acceso denegado. Esta cuenta no es el Administrador.');
+            // Cerrar sesión en Firebase inmediatamente
+            try {
+                await signOut(firebaseAuth);
+            } catch (err) {
+                console.error("Error al cerrar sesión no autorizada:", err);
+            }
+        }
+    } else {
+        isAdmin = false;
+    }
+    updateRoleUI();
+    // Forzar renderizado para ajustar elementos según rol
+    renderProducts();
+});
+
+// Registrar eventos de botones de la pantalla de bienvenida
+if (btnLoginGoogle) {
+    btnLoginGoogle.addEventListener('click', async () => {
+        try {
+            showToast('info', 'Conectando con Google...');
+            await signInWithPopup(firebaseAuth, googleProvider);
+        } catch (err) {
+            console.error("Error al iniciar sesión con Google:", err);
+            showToast('error', 'Error al conectar con Google: ' + err.message);
+        }
+    });
+}
+
+if (btnVisitor) {
+    btnVisitor.addEventListener('click', () => {
+        isAdmin = false;
+        userRoleDecided = true;
+        showToast('info', 'Entrando en modo de solo lectura (Visitante).');
+        updateRoleUI();
+        renderProducts();
+    });
+}
+
+if (btnLogout) {
+    btnLogout.addEventListener('click', async () => {
+        if (confirm('¿Cerrar sesión de Administrador?')) {
+            try {
+                userRoleDecided = false;
+                await signOut(firebaseAuth);
+                showToast('success', 'Sesión cerrada. Ahora eres visitante.');
+            } catch (err) {
+                showToast('error', 'Error al cerrar sesión: ' + err.message);
+            }
+        }
+    });
+}
 
 // Función auxiliar para migrar IndexedDB local (si existe) a Firestore la primera vez
 async function migrateIndexedDBToFirestore() {
@@ -404,6 +554,12 @@ const btnSortModified = document.getElementById('btn-sort-modified');
 const summarySearchInput = document.getElementById('summary-search-input');
 const btnScrollToggle = document.getElementById('btn-scroll-toggle');
 
+// Auth DOM
+const welcomeOverlay = document.getElementById('welcome-overlay');
+const btnLoginGoogle = document.getElementById('btn-login-google');
+const btnVisitor = document.getElementById('btn-visitor');
+const btnLogout = document.getElementById('btn-logout');
+
 let promptMode = 'create'; // 'create' o 'rename'
 let soldSortMode = 'default'; // 'default', 'buyer-asc', 'buyer-desc'
 let buyersSortMode = 'name-asc'; // 'default', 'name-asc', 'total-desc'
@@ -480,6 +636,7 @@ btnCancelForm.addEventListener('click', closeForm);
 let dragCounter = 0; // contador para manejar drag enter/leave en hijos
 
 document.addEventListener('dragenter', e => {
+    if (!isAdmin) return; // Restringir a Administrador
     if (e.dataTransfer.types.includes('Files')) {
         dragCounter++;
         dragOverlay.classList.add('active');
@@ -487,6 +644,7 @@ document.addEventListener('dragenter', e => {
 });
 
 document.addEventListener('dragleave', e => {
+    if (!isAdmin) return; // Restringir a Administrador
     dragCounter--;
     if (dragCounter <= 0) {
         dragCounter = 0;
@@ -495,10 +653,12 @@ document.addEventListener('dragleave', e => {
 });
 
 document.addEventListener('dragover', e => {
+    if (!isAdmin) return; // Restringir a Administrador
     e.preventDefault(); // necesario para que drop funcione
 });
 
 document.addEventListener('drop', async e => {
+    if (!isAdmin) return; // Restringir a Administrador
     e.preventDefault();
     dragCounter = 0;
     dragOverlay.classList.remove('active');
@@ -538,6 +698,7 @@ document.addEventListener('drop', async e => {
 
 // ── PEGADO CON CTRL+V ────────────────────────────────────────
 document.addEventListener('paste', async e => {
+    if (!isAdmin) return; // Restringir a Administrador
     const items = e.clipboardData?.items;
     if (!items) return;
     for (const item of items) {
@@ -843,6 +1004,11 @@ summarySearchInput.addEventListener('input', () => {
 
 // Redirección automática de foco a la búsqueda (Type-to-Search)
 document.addEventListener('keydown', (e) => {
+    // 0. Ignorar si la pantalla de bienvenida de roles está abierta
+    if (welcomeOverlay && welcomeOverlay.style.display === 'flex') {
+        return;
+    }
+
     // 1. Ignorar si el usuario ya está interactuando con un campo de entrada editable
     const active = document.activeElement;
     if (active && (
@@ -917,7 +1083,7 @@ function renderPriceHistory(product) {
             ? `<span class="ph-badge badge-current">Actual</span>`
             : ``;
 
-        const revertBtn = !isCurrent
+        const revertBtn = (!isCurrent && isAdmin)
             ? `<button type="button" class="btn-revert"
                    data-price="${escHtml(entry.price)}"
                    data-comp="${escHtml(entry.compradora || '')}">
@@ -971,23 +1137,29 @@ function openEditModal(id) {
         editNoImage.style.display = 'flex';
     }
 
-    // Renderizar historial
+    // Renderizar historial (tomará en cuenta isAdmin)
     renderPriceHistory(p);
 
     editModal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
+    
+    // Aplicar adaptaciones visuales de rol al modal
+    updateRoleUI();
+    
     if (window.lucide) lucide.createIcons();
 
-    // Foco condicional: al precio si ya tiene compradora, o a la compradora si está libre
-    setTimeout(() => {
-        if (p.compradora) {
-            editPrice.focus();
-            editPrice.select();
-        } else {
-            editCompradora.focus();
-            editCompradora.select();
-        }
-    }, 80);
+    // Foco condicional: solo para el administrador
+    if (isAdmin) {
+        setTimeout(() => {
+            if (p.compradora) {
+                editPrice.focus();
+                editPrice.select();
+            } else {
+                editCompradora.focus();
+                editCompradora.select();
+            }
+        }, 80);
+    }
 }
 
 function closeEditModal() {

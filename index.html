@@ -112,6 +112,9 @@
                     <i data-lucide="sun" class="icon-sun"></i>
                     <i data-lucide="moon" class="icon-moon"></i>
                 </button>
+                <button id="btn-logout" class="btn-icon danger" title="Cerrar sesión de Administrador" aria-label="Cerrar sesión de Administrador" style="display: none;">
+                    <i data-lucide="log-out"></i>
+                </button>
             </div>
         </header>
 
@@ -397,6 +400,34 @@
     <button id="btn-scroll-toggle" class="btn-scroll-toggle" title="Ir al final" aria-label="Ir al final">
         <i data-lucide="arrow-down"></i>
     </button>
+
+    <!-- ── PANTALLA DE BIENVENIDA / ACCESO ── -->
+    <div id="welcome-overlay" class="welcome-overlay" style="display: none;">
+        <div class="welcome-card">
+            <div class="welcome-brand">
+                <div class="welcome-logo"><i data-lucide="gavel"></i></div>
+                <h1 class="welcome-title">Bonito Bazar</h1>
+                <p class="welcome-tagline">Gestión de Subastas y Cuentas</p>
+            </div>
+            <div class="welcome-actions">
+                <button id="btn-login-google" class="btn-welcome-action primary">
+                    <span class="g-icon-wrapper">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                            <path fill="#EA4335" d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114A5.69 5.69 0 0 1 8.24 12.8a5.69 5.69 0 0 1 5.751-5.714c2.259 0 4.312 1.014 5.69 2.628l3.18-3.18C20.672 4.314 17.568 3 13.991 3 8.351 3 3.99 7.362 3.99 13s4.36 10 10.001 10c5.38 0 9.771-3.69 9.771-9.714 0-.61-.06-1.218-.182-1.8H12.24Z"/>
+                        </svg>
+                    </span>
+                    <span>Entrar como Administrador</span>
+                </button>
+                <button id="btn-visitor" class="btn-welcome-action secondary">
+                    <i data-lucide="eye"></i>
+                    <span>Entrar como Visitante</span>
+                </button>
+            </div>
+            <div class="welcome-footer">
+                <span>© 2026 Bonito Bazar</span>
+            </div>
+        </div>
+    </div>
 
     <div id="toast" class="toast" aria-live="polite"></div>
     <script type="module" src="app.js"></script>
