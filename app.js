@@ -64,6 +64,8 @@ let deliveryFilterStatus = 'todos';     // 'todos', 'pendiente', 'pagado'
 let deliveryFilterPlace = 'todos';      // 'todos', 'Tuxtla', 'Berriozabal', etc.
 let deliveryFilterPayment = 'todos';    // 'todos', 'efectivo', 'transferencia', 'sin_especificar'
 let deliverySortBy = 'name-asc';        // 'name-asc', 'items-desc', 'items-asc', 'total-desc', 'total-asc'
+let historicalDeliveriesData = null;    // Caché de datos de entregas pasadas
+let isLoadingHistory = false;
 
 /**
  * Escucha los productos de la lista activa en tiempo real desde Firestore
@@ -2600,6 +2602,86 @@ function createProductCard(p, i) {
         if (window.lucide) lucide.createIcons();
     }
 
+    function getBuyerMapFromProducts(productsArray) {
+        const buyerMap = {};
+        productsArray.forEach(p => {
+            if (!p.compradora) return;
+            const name = p.compradora.trim();
+            if (!buyerMap[name]) buyerMap[name] = { total: 0, items: [], images: [] };
+            buyerMap[name].total += parseFloat(p.price) || 0;
+            buyerMap[name].items.push({ name: p.name, price: p.price });
+            if (p.image) buyerMap[name].images.push({ src: p.image, name: p.name });
+        });
+        return buyerMap;
+    }
+
+    async function loadHistoricalDeliveries() {
+        if (historicalDeliveriesData || isLoadingHistory) return;
+        isLoadingHistory = true;
+
+        // Mostrar un pequeño indicador en el header del panel de entregas
+        let indicator = document.getElementById('history-loading-indicator');
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'history-loading-indicator';
+            indicator.className = 'history-loading-indicator';
+            indicator.innerHTML = '<i data-lucide="loader" class="animate-spin" style="width: 14px; height: 14px;"></i> Cargando historial...';
+            const header = document.querySelector('.summary-view-header');
+            if (header) {
+                const closeBtn = document.getElementById('btn-close-deliveries');
+                if (closeBtn) {
+                    header.insertBefore(indicator, closeBtn);
+                } else {
+                    header.appendChild(indicator);
+                }
+            }
+            if (window.lucide) lucide.createIcons();
+        }
+
+        try {
+            const history = {};
+            const pastLists = lists.filter(l => l.id !== activeListId);
+
+            const promises = pastLists.map(async (lista) => {
+                try {
+                    const [prodSnapshot, delSnapshot] = await Promise.all([
+                        getDocs(collection(firestoreDb, "listas", lista.id, "productos")),
+                        getDocs(collection(firestoreDb, "listas", lista.id, "entregas"))
+                    ]);
+
+                    const prods = [];
+                    prodSnapshot.forEach(doc => prods.push(doc.data()));
+
+                    const dels = [];
+                    delSnapshot.forEach(doc => dels.push(doc.data()));
+
+                    history[lista.id] = {
+                        id: lista.id,
+                        name: lista.name,
+                        createdAt: lista.createdAt,
+                        products: prods,
+                        deliveries: dels
+                    };
+                } catch (e) {
+                    console.error(`Error cargando historial de la lista ${lista.name}:`, e);
+                }
+            });
+
+            await Promise.all(promises);
+            historicalDeliveriesData = history;
+        } catch (err) {
+            console.error("Error al cargar historial de entregas:", err);
+        } finally {
+            isLoadingHistory = false;
+            const ind = document.getElementById('history-loading-indicator');
+            if (ind) ind.remove();
+
+            if (deliverySearchTerm) {
+                filterDeliveries();
+            }
+        }
+    }
+
     // ── SECCIÓN ENTREGAS ──────────────────────────────────────────
 
     function openDeliveriesView() {
@@ -2634,6 +2716,9 @@ function createProductCard(p, i) {
         document.body.style.overflow = 'hidden';
         updateScrollButton();
         if (window.lucide) lucide.createIcons();
+
+        // Cargar el historial en segundo plano para las búsquedas
+        loadHistoricalDeliveries();
     }
 
     function closeDeliveriesView() {
@@ -2647,89 +2732,361 @@ function createProductCard(p, i) {
     function filterDeliveries() {
         const term = deliverySearchTerm.toLowerCase().trim();
         const rows = Array.from(deliveriesList.querySelectorAll('.delivery-row'));
-        let visibleCount = 0;
 
-        rows.forEach(row => {
-            const name = row.dataset.compradora.toLowerCase();
-            const prodNames = row.dataset.prodNames ? row.dataset.prodNames.toLowerCase() : '';
-            const status = row.dataset.status;
-            const lugar = row.dataset.lugar;
-            const paymentType = row.dataset.paymentType;
-
-            // 1. Filtrar por búsqueda de texto
-            const matchSearch = name.includes(term) || prodNames.includes(term);
-
-            // 2. Filtrar por estatus
-            let matchStatus = true;
-            if (deliveryFilterStatus !== 'todos') {
-                matchStatus = (status === deliveryFilterStatus);
-            }
-
-            // 3. Filtrar por lugar
-            let matchPlace = true;
-            if (deliveryFilterPlace !== 'todos') {
-                if (deliveryFilterPlace === 'sin_especificar') {
-                    matchPlace = (lugar === '');
-                } else {
-                    matchPlace = (lugar === deliveryFilterPlace);
+        if (!term) {
+            // Si el buscador por texto está vacío, mostramos solo entregas de la lista activa (DOM actual)
+            let visibleCount = 0;
+            rows.forEach(row => {
+                // Asegurar que no mostramos registros del historial pasada si no hay búsqueda
+                if (row.classList.contains('past-list-row')) {
+                    row.style.display = 'none';
+                    return;
                 }
-            }
 
-            // 4. Filtrar por tipo de pago
-            let matchPayment = true;
-            if (deliveryFilterPayment !== 'todos') {
-                if (deliveryFilterPayment === 'sin_especificar') {
-                    matchPayment = (paymentType === '');
-                } else {
-                    matchPayment = (paymentType === deliveryFilterPayment);
+                const status = row.dataset.status;
+                const lugar = row.dataset.lugar;
+                const paymentType = row.dataset.paymentType;
+
+                let matchStatus = true;
+                if (deliveryFilterStatus !== 'todos') {
+                    matchStatus = (status === deliveryFilterStatus);
                 }
+
+                let matchPlace = true;
+                if (deliveryFilterPlace !== 'todos') {
+                    if (deliveryFilterPlace === 'sin_especificar') {
+                        matchPlace = (lugar === '');
+                    } else {
+                        matchPlace = (lugar === deliveryFilterPlace);
+                    }
+                }
+
+                let matchPayment = true;
+                if (deliveryFilterPayment !== 'todos') {
+                    if (deliveryFilterPayment === 'sin_especificar') {
+                        matchPayment = (paymentType === '');
+                    } else {
+                        matchPayment = (paymentType === deliveryFilterPayment);
+                    }
+                }
+
+                const visible = matchStatus && matchPlace && matchPayment;
+                row.style.display = visible ? 'flex' : 'none';
+                if (visible) visibleCount++;
+            });
+
+            // Ocultar métricas si hay filtros de estatus/lugar/pago activos
+            const hasActiveFilters = deliveryFilterStatus !== 'todos' || deliveryFilterPlace !== 'todos' || deliveryFilterPayment !== 'todos';
+            const statsGrid = deliveriesView ? deliveriesView.querySelector('.summary-stats-grid') : null;
+            if (statsGrid) statsGrid.style.display = hasActiveFilters ? 'none' : '';
+
+            const filtersBar = deliveriesView ? deliveriesView.querySelector('.deliveries-filters-bar') : null;
+            if (filtersBar) filtersBar.style.display = 'grid';
+
+            if (rows.filter(r => !r.classList.contains('past-list-row')).length === 0) {
+                deliveriesList.style.display = 'none';
+                deliveriesEmptyState.style.display = 'block';
+                deliveriesEmptyState.querySelector('h2').textContent = 'Sin entregas que mostrar';
+                deliveriesEmptyState.querySelector('p').textContent = 'Adjudica productos a compradoras para ver e iniciar la gestión de entregas.';
+            } else if (visibleCount === 0) {
+                deliveriesList.style.display = 'none';
+                deliveriesEmptyState.style.display = 'block';
+                deliveriesEmptyState.querySelector('h2').textContent = 'Sin coincidencias';
+                deliveriesEmptyState.querySelector('p').textContent = 'No hay entregas que coincidan con los filtros aplicados.';
+            } else {
+                deliveriesList.style.display = 'flex';
+                deliveriesEmptyState.style.display = 'none';
             }
-
-            const visible = matchSearch && matchStatus && matchPlace && matchPayment;
-            row.style.display = visible ? 'flex' : 'none';
-            if (visible) visibleCount++;
-        });
-
-        // Ocultar barra de filtros si hay búsqueda activa por texto (libera espacio en móvil)
-        const filtersBar = deliveriesView ? deliveriesView.querySelector('.deliveries-filters-bar') : null;
-        if (filtersBar) {
-            filtersBar.style.display = term ? 'none' : 'grid';
+            return;
         }
 
-        // Ocultar métricas si hay filtros o búsquedas activas (optimización móvil)
-        const hasActiveFilters = term || deliveryFilterStatus !== 'todos' || deliveryFilterPlace !== 'todos' || deliveryFilterPayment !== 'todos';
-        const statsGrid = deliveriesView ? deliveriesView.querySelector('.summary-stats-grid') : null;
-        if (statsGrid) statsGrid.style.display = hasActiveFilters ? 'none' : '';
+        // --- BÚSQUEDA ACTIVA POR TEXTO (INCLUYE HISTORIAL PASADO) ---
+        const results = [];
 
-        // Actualizar vistas vacías
-        if (rows.length === 0) {
-            deliveriesList.style.display = 'none';
-            deliveriesEmptyState.style.display = 'block';
-            deliveriesEmptyState.querySelector('h2').textContent = 'Sin entregas que mostrar';
-            deliveriesEmptyState.querySelector('p').textContent = 'Adjudica productos a compradoras para ver e iniciar la gestión de entregas.';
-        } else if (visibleCount === 0) {
+        // 1. Coincidencias de la lista activa
+        const activeBuyerMap = getBuyerMapFromProducts(products);
+        const activeListMeta = lists.find(l => l.id === activeListId) || { name: 'Lista Activa', createdAt: new Date().toISOString() };
+
+        Object.keys(activeBuyerMap).forEach(name => {
+            const buyerData = activeBuyerMap[name];
+            const prodNames = buyerData.items.map(i => i.name).join(' | ');
+
+            if (name.toLowerCase().includes(term) || prodNames.toLowerCase().includes(term)) {
+                const delivery = activeDeliveries.find(d => d.compradora === name) || {
+                    compradora: name, status: 'pendiente', paymentType: '', lugar: '', updatedAt: new Date().toISOString()
+                };
+                results.push({
+                    isCurrentList: true,
+                    listId: activeListId,
+                    listName: activeListMeta.name,
+                    listCreatedAt: activeListMeta.createdAt,
+                    compradora: name,
+                    total: buyerData.total,
+                    items: buyerData.items,
+                    images: buyerData.images,
+                    delivery: delivery
+                });
+            }
+        });
+
+        // 2. Coincidencias de las listas pasadas (historial cargado)
+        if (historicalDeliveriesData) {
+            Object.keys(historicalDeliveriesData).forEach(listId => {
+                const hist = historicalDeliveriesData[listId];
+                const histBuyerMap = getBuyerMapFromProducts(hist.products);
+
+                Object.keys(histBuyerMap).forEach(name => {
+                    const buyerData = histBuyerMap[name];
+                    const prodNames = buyerData.items.map(i => i.name).join(' | ');
+
+                    if (name.toLowerCase().includes(term) || prodNames.toLowerCase().includes(term)) {
+                        const delivery = hist.deliveries.find(d => d.compradora === name) || {
+                            compradora: name, status: 'pendiente', paymentType: '', lugar: '', updatedAt: new Date().toISOString()
+                        };
+                        results.push({
+                            isCurrentList: false,
+                            listId: listId,
+                            listName: hist.name,
+                            listCreatedAt: hist.createdAt,
+                            compradora: name,
+                            total: buyerData.total,
+                            items: buyerData.items,
+                            images: buyerData.images,
+                            delivery: delivery
+                        });
+                    }
+                });
+            });
+        }
+
+        // 3. Ordenar resultados: más recientes primero (listCreatedAt desc)
+        results.sort((a, b) => new Date(b.listCreatedAt) - new Date(a.listCreatedAt));
+
+        // Ocultar barra de filtros y métricas si hay búsqueda activa por texto (libera espacio en móvil)
+        const filtersBar = deliveriesView ? deliveriesView.querySelector('.deliveries-filters-bar') : null;
+        if (filtersBar) filtersBar.style.display = 'none';
+
+        const statsGrid = deliveriesView ? deliveriesView.querySelector('.summary-stats-grid') : null;
+        if (statsGrid) statsGrid.style.display = 'none';
+
+        // Pintar resultados compilados
+        if (results.length === 0) {
             deliveriesList.style.display = 'none';
             deliveriesEmptyState.style.display = 'block';
             deliveriesEmptyState.querySelector('h2').textContent = 'Sin coincidencias';
-            deliveriesEmptyState.querySelector('p').textContent = 'No hay entregas que coincidan con los filtros aplicados.';
-        } else {
-            deliveriesList.style.display = 'flex';
-            deliveriesEmptyState.style.display = 'none';
+            deliveriesEmptyState.querySelector('p').textContent = 'No encontramos compras ni prendas con ese nombre en ninguna de las listas.';
+            return;
         }
+
+        deliveriesList.style.display = 'flex';
+        deliveriesEmptyState.style.display = 'none';
+        deliveriesList.innerHTML = '';
+
+        results.forEach(res => {
+            const row = document.createElement('div');
+            row.className = `delivery-row ${res.isCurrentList ? '' : 'past-list-row'}`;
+            row.dataset.compradora = res.compradora;
+            row.dataset.status = res.delivery.status;
+            row.dataset.lugar = res.delivery.lugar || '';
+            row.dataset.paymentType = res.delivery.paymentType || '';
+
+            const imagesHtml = res.images.length > 0
+                ? `<div class="delivery-images-grid">${res.images.map(img =>
+                    `<img class="delivery-thumb" src="${img.src}" alt="${escHtml(img.name)}" title="${escHtml(img.name)}">`
+                  ).join('')}</div>`
+                : '';
+
+            if (res.isCurrentList) {
+                const isPagado = res.delivery.status === 'pagado';
+                const statusClass = isPagado ? 'status-pagado' : 'status-pendiente';
+                const statusIcon = isPagado ? 'check-circle' : 'clock';
+                const statusLabel = isPagado ? 'Pagado' : 'Pendiente';
+                const paymentDisabledClass = isPagado ? '' : 'disabled';
+
+                row.innerHTML = `
+                    <div class="delivery-card-header">
+                        <div class="delivery-buyer-name">
+                            <i data-lucide="user"></i>
+                            ${escHtml(res.compradora)}
+                            <span class="badge-list-current">Lista Activa</span>
+                        </div>
+                        <div class="delivery-header-right">
+                            <div class="delivery-buyer-total">$${res.total.toFixed(2)}</div>
+                            <div class="delivery-buyer-items-hint">${res.items.length} prenda${res.items.length !== 1 ? 's' : ''}</div>
+                        </div>
+                    </div>
+                    <div class="delivery-card-body">
+                        ${imagesHtml}
+                        <div class="delivery-card-controls">
+                            <div class="delivery-place-selector">
+                                <label>Lugar de Entrega</label>
+                                <select class="delivery-place-select" data-compradora="${escHtml(res.compradora)}">
+                                    <option value="">— Sin especificar —</option>
+                                    <option value="Tuxtla" ${res.delivery.lugar === 'Tuxtla' ? 'selected' : ''}>Tuxtla</option>
+                                    <option value="Berriozabal" ${res.delivery.lugar === 'Berriozabal' ? 'selected' : ''}>Berriozabal</option>
+                                    <option value="Patria" ${res.delivery.lugar === 'Patria' ? 'selected' : ''}>Patria</option>
+                                    <option value="Shanka" ${res.delivery.lugar === 'Shanka' ? 'selected' : ''}>Shanka</option>
+                                    <option value="Otro" ${res.delivery.lugar === 'Otro' ? 'selected' : ''}>Otro</option>
+                                </select>
+                           </div>
+                           <div class="delivery-status-control">
+                               <span>Estatus</span>
+                               <button class="btn-status-toggle ${statusClass}" data-compradora="${escHtml(res.compradora)}">
+                                   <i data-lucide="${statusIcon}"></i>
+                                   ${statusLabel}
+                               </button>
+                           </div>
+                           <div class="delivery-payment-control">
+                               <label>Tipo de Pago</label>
+                               <div class="payment-options-segment ${paymentDisabledClass}">
+                                   <button class="btn-payment-option ${res.delivery.paymentType === 'efectivo' ? 'active' : ''}" data-compradora="${escHtml(res.compradora)}" data-type="efectivo">
+                                       Efectivo
+                                   </button>
+                                   <button class="btn-payment-option ${res.delivery.paymentType === 'transferencia' ? 'active' : ''}" data-compradora="${escHtml(res.compradora)}" data-type="transferencia">
+                                       Transferencia
+                                   </button>
+                               </div>
+                           </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                const isPagado = res.delivery.status === 'pagado';
+                const statusLabel = isPagado ? 'Pagado' : 'Pendiente';
+                const statusBadgeClass = isPagado ? 'status-pagado-badge' : 'status-pendiente-badge';
+                const statusIcon = isPagado ? 'check' : 'clock';
+
+                let deliveryDetailText = '';
+                if (res.delivery.paymentType || res.delivery.lugar) {
+                    const detailParts = [];
+                    if (res.delivery.paymentType) detailParts.push(res.delivery.paymentType.toUpperCase());
+                    if (res.delivery.lugar) detailParts.push(res.delivery.lugar);
+                    deliveryDetailText = ` (${detailParts.join(' en ')})`;
+                }
+
+                row.innerHTML = `
+                    <div class="delivery-card-header">
+                        <div class="delivery-buyer-name">
+                            <i data-lucide="user" style="opacity: 0.5;"></i>
+                            ${escHtml(res.compradora)}
+                            <span class="badge-list-past" title="${escHtml(res.listName)}">${escHtml(res.listName)}</span>
+                        </div>
+                        <div class="delivery-header-right">
+                            <div class="delivery-buyer-total past-total">$${res.total.toFixed(2)}</div>
+                            <div class="delivery-buyer-items-hint">${res.items.length} prenda${res.items.length !== 1 ? 's' : ''}</div>
+                        </div>
+                    </div>
+                    <div class="delivery-card-body">
+                        ${imagesHtml}
+                        <div class="past-delivery-status-box">
+                            <span class="${statusBadgeClass}">
+                                <i data-lucide="${statusIcon}"></i>
+                                ${statusLabel}${deliveryDetailText}
+                            </span>
+                            <span class="past-date-label">Creada: ${new Date(res.listCreatedAt).toLocaleDateString('es-ES')}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            deliveriesList.appendChild(row);
+        });
+
+        // Registrar los event listeners interactivos solo para las filas de la lista activa
+        registerInteractiveDeliveryListeners();
+
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function registerInteractiveDeliveryListeners() {
+        deliveriesList.querySelectorAll('.btn-status-toggle').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const compradora = btn.dataset.compradora;
+                const existing = activeDeliveries.find(d => d.compradora === compradora) || {
+                    compradora, status: 'pendiente', paymentType: '', lugar: '', updatedAt: new Date().toISOString()
+                };
+                const newStatus = existing.status === 'pagado' ? 'pendiente' : 'pagado';
+                const updated = { ...existing, status: newStatus, updatedAt: new Date().toISOString() };
+
+                const idx = activeDeliveries.findIndex(d => d.compradora === compradora);
+                if (idx >= 0) activeDeliveries[idx] = updated;
+                else activeDeliveries.push(updated);
+
+                if (deliverySearchTerm.trim()) {
+                    filterDeliveries();
+                } else {
+                    renderDeliveries();
+                }
+                if (window.lucide) lucide.createIcons();
+
+                try {
+                    await db.saveDelivery(activeListId, updated);
+                } catch (err) {
+                    showToast('error', 'Error al guardar estatus: ' + err.message);
+                }
+            });
+        });
+
+        deliveriesList.querySelectorAll('.btn-payment-option').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const compradora = btn.dataset.compradora;
+                const type = btn.dataset.type;
+                const existing = activeDeliveries.find(d => d.compradora === compradora) || {
+                    compradora, status: 'pendiente', paymentType: '', lugar: '', updatedAt: new Date().toISOString()
+                };
+                const newType = existing.paymentType === type ? '' : type;
+                const updated = { ...existing, paymentType: newType, updatedAt: new Date().toISOString() };
+
+                const idx = activeDeliveries.findIndex(d => d.compradora === compradora);
+                if (idx >= 0) activeDeliveries[idx] = updated;
+                else activeDeliveries.push(updated);
+
+                if (deliverySearchTerm.trim()) {
+                    filterDeliveries();
+                } else {
+                    renderDeliveries();
+                }
+                if (window.lucide) lucide.createIcons();
+
+                try {
+                    await db.saveDelivery(activeListId, updated);
+                } catch (err) {
+                    showToast('error', 'Error al guardar tipo de pago: ' + err.message);
+                }
+            });
+        });
+
+        deliveriesList.querySelectorAll('.delivery-place-select').forEach(sel => {
+            sel.addEventListener('change', async () => {
+                const compradora = sel.dataset.compradora;
+                const lugar = sel.value;
+                const existing = activeDeliveries.find(d => d.compradora === compradora) || {
+                    compradora, status: 'pendiente', paymentType: '', lugar: '', updatedAt: new Date().toISOString()
+                };
+                const updated = { ...existing, lugar, updatedAt: new Date().toISOString() };
+
+                const idx = activeDeliveries.findIndex(d => d.compradora === compradora);
+                if (idx >= 0) activeDeliveries[idx] = updated;
+                else activeDeliveries.push(updated);
+
+                try {
+                    await db.saveDelivery(activeListId, updated);
+                    showToast('success', `Lugar de entrega actualizado para ${compradora}.`);
+                    
+                    const row = deliveriesList.querySelector(`.delivery-row[data-compradora="${compradora}"]:not(.past-list-row)`);
+                    if (row) {
+                        row.dataset.lugar = lugar;
+                    }
+                } catch (err) {
+                    showToast('error', 'Error al guardar lugar: ' + err.message);
+                }
+            });
+        });
     }
 
     function renderDeliveries() {
         // Construir mapa de compradora -> { total, items, images }
-        const buyerMap = {};
-        products.forEach(p => {
-            if (!p.compradora) return;
-            const name = p.compradora.trim();
-            if (!buyerMap[name]) buyerMap[name] = { total: 0, items: [], images: [] };
-            buyerMap[name].total += parseFloat(p.price) || 0;
-            buyerMap[name].items.push({ name: p.name, price: p.price });
-            if (p.image) buyerMap[name].images.push({ src: p.image, name: p.name });
-        });
-
+        const buyerMap = getBuyerMapFromProducts(products);
         let buyerNames = Object.keys(buyerMap);
 
         // Aplicar ordenamiento dinámico
@@ -2766,6 +3123,8 @@ function createProductCard(p, i) {
         if (buyerNames.length === 0) {
             deliveriesList.style.display = 'none';
             deliveriesEmptyState.style.display = 'block';
+            deliveriesEmptyState.querySelector('h2').textContent = 'Sin entregas que mostrar';
+            deliveriesEmptyState.querySelector('p').textContent = 'Adjudica productos a compradoras para ver e iniciar la gestión de entregas.';
             return;
         }
 
@@ -2857,76 +3216,7 @@ function createProductCard(p, i) {
         });
 
         // Registrar eventos después de pintar
-        deliveriesList.querySelectorAll('.btn-status-toggle').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const compradora = btn.dataset.compradora;
-                const existing = activeDeliveries.find(d => d.compradora === compradora) || {
-                    compradora, status: 'pendiente', paymentType: '', lugar: '', updatedAt: new Date().toISOString()
-                };
-                const newStatus = existing.status === 'pagado' ? 'pendiente' : 'pagado';
-                const updated = { ...existing, status: newStatus, updatedAt: new Date().toISOString() };
-
-                const idx = activeDeliveries.findIndex(d => d.compradora === compradora);
-                if (idx >= 0) activeDeliveries[idx] = updated;
-                else activeDeliveries.push(updated);
-
-                renderDeliveries();
-                if (window.lucide) lucide.createIcons();
-
-                try {
-                    await db.saveDelivery(activeListId, updated);
-                } catch (err) {
-                    showToast('error', 'Error al guardar estatus: ' + err.message);
-                }
-            });
-        });
-
-        deliveriesList.querySelectorAll('.btn-payment-option').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const compradora = btn.dataset.compradora;
-                const type = btn.dataset.type;
-                const existing = activeDeliveries.find(d => d.compradora === compradora) || {
-                    compradora, status: 'pendiente', paymentType: '', lugar: '', updatedAt: new Date().toISOString()
-                };
-                const newType = existing.paymentType === type ? '' : type;
-                const updated = { ...existing, paymentType: newType, updatedAt: new Date().toISOString() };
-
-                const idx = activeDeliveries.findIndex(d => d.compradora === compradora);
-                if (idx >= 0) activeDeliveries[idx] = updated;
-                else activeDeliveries.push(updated);
-
-                renderDeliveries();
-                if (window.lucide) lucide.createIcons();
-
-                try {
-                    await db.saveDelivery(activeListId, updated);
-                } catch (err) {
-                    showToast('error', 'Error al guardar tipo de pago: ' + err.message);
-                }
-            });
-        });
-
-        deliveriesList.querySelectorAll('.delivery-place-select').forEach(sel => {
-            sel.addEventListener('change', async () => {
-                const compradora = sel.dataset.compradora;
-                const lugar = sel.value;
-                const existing = activeDeliveries.find(d => d.compradora === compradora) || {
-                    compradora, status: 'pendiente', paymentType: '', lugar: '', updatedAt: new Date().toISOString()
-                };
-                const updated = { ...existing, lugar, updatedAt: new Date().toISOString() };
-
-                const idx = activeDeliveries.findIndex(d => d.compradora === compradora);
-                if (idx >= 0) activeDeliveries[idx] = updated;
-                else activeDeliveries.push(updated);
-
-                try {
-                    await db.saveDelivery(activeListId, updated);
-                    showToast('success', `Lugar de entrega actualizado para ${compradora}.`);
-                } catch (err) {
-                    showToast('error', 'Error al guardar lugar: ' + err.message);
-                }
-            });
-        });
+        registerInteractiveDeliveryListeners();
 
         // Aplicar el filtro de búsqueda actual al finalizar el pintado
         filterDeliveries();
