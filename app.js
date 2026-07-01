@@ -365,6 +365,14 @@ async function loadFromStorage() {
 }
 
 // ── UTILIDADES ───────────────────────────────────────────────
+function debounce(fn, delay) {
+    let timeoutId;
+    return function (...args) {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => fn.apply(this, args), delay);
+    };
+}
+
 function uid() {
     return `p_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 }
@@ -1154,15 +1162,15 @@ function createProductCard(p, i) {
     }
 
     // ── BÚSQUEDA ─────────────────────────────────────────────────
-    searchInput.addEventListener('input', () => {
+    searchInput.addEventListener('input', debounce(() => {
         searchTerm = searchInput.value;
         renderProducts();
-    });
+    }, 100));
 
-    summarySearchInput.addEventListener('input', () => {
+    summarySearchInput.addEventListener('input', debounce(() => {
         summarySearchTerm = summarySearchInput.value;
-        renderSummaryView();
-    });
+        filterSummaryView();
+    }, 100));
 
     // Redirección automática de foco a la búsqueda (Type-to-Search)
     document.addEventListener('keydown', (e) => {
@@ -2166,6 +2174,35 @@ function createProductCard(p, i) {
         renderSummaryView();
     });
 
+    function filterSummaryView() {
+        const term = summarySearchTerm.toLowerCase().trim();
+        const cards = Array.from(summaryBuyersList.querySelectorAll('.summary-group-card'));
+        let visibleCount = 0;
+
+        cards.forEach(card => {
+            const compName = card.dataset.compName ? card.dataset.compName.toLowerCase() : '';
+            const prodNames = card.dataset.prodNames ? card.dataset.prodNames.toLowerCase() : '';
+            const match = compName.includes(term) || prodNames.includes(term);
+            card.style.display = match ? 'block' : 'none';
+            if (match) visibleCount++;
+        });
+
+        if (cards.length === 0) {
+            summaryEmptyState.style.display = 'flex';
+            summaryBuyersList.style.display = 'none';
+            summaryEmptyState.querySelector('h2').textContent = 'Sin ventas adjudicadas';
+            summaryEmptyState.querySelector('p').textContent = 'Asigna una Compradora a tus productos en el listado para ver sus cuentas aquí.';
+        } else if (visibleCount === 0) {
+            summaryEmptyState.style.display = 'flex';
+            summaryBuyersList.style.display = 'none';
+            summaryEmptyState.querySelector('h2').textContent = 'Sin coincidencias';
+            summaryEmptyState.querySelector('p').textContent = 'No hay cuentas ni productos que coincidan con tu búsqueda.';
+        } else {
+            summaryEmptyState.style.display = 'none';
+            summaryBuyersList.style.display = 'flex';
+        }
+    }
+
     function renderSummaryView() {
         summaryBuyersList.innerHTML = '';
 
@@ -2193,21 +2230,6 @@ function createProductCard(p, i) {
 
         let listBuyers = Object.values(groups);
 
-        // Filtrar por término de búsqueda en el resumen (compradora o prenda)
-        if (summarySearchTerm) {
-            const t = summarySearchTerm.toLowerCase();
-            listBuyers = listBuyers.filter(g =>
-                g.name.toLowerCase().includes(t) ||
-                g.products.some(p => p.name.toLowerCase().includes(t))
-            );
-        }
-
-        let filteredAvailable = [...availableProducts];
-        if (summarySearchTerm) {
-            const t = summarySearchTerm.toLowerCase();
-            filteredAvailable = filteredAvailable.filter(p => p.name.toLowerCase().includes(t));
-        }
-
         if (products.length === 0) {
             summaryEmptyState.style.display = 'flex';
             summaryBuyersList.style.display = 'none';
@@ -2219,18 +2241,8 @@ function createProductCard(p, i) {
             return;
         }
 
-        const hasFilteredBuyers = listBuyers.length > 0;
-        const hasFilteredAvail = filteredAvailable.length > 0;
-
-        if (!hasFilteredBuyers && !hasFilteredAvail) {
-            summaryEmptyState.style.display = 'flex';
-            summaryBuyersList.style.display = 'none';
-            summaryEmptyState.querySelector('h2').textContent = 'Sin coincidencias';
-            summaryEmptyState.querySelector('p').textContent = 'No hay cuentas ni productos que coincidan con tu búsqueda.';
-        } else {
-            summaryEmptyState.style.display = 'none';
-            summaryBuyersList.style.display = 'flex';
-        }
+        summaryEmptyState.style.display = 'none';
+        summaryBuyersList.style.display = 'flex';
 
         // Ordenar cuentas de compradoras según el modo seleccionado
         if (buyersSortMode === 'name-asc') {
@@ -2255,6 +2267,8 @@ function createProductCard(p, i) {
             const groupCard = document.createElement('div');
             groupCard.className = 'summary-group-card';
             groupCard.id = `group-card-${g.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+            groupCard.dataset.compName = g.name;
+            groupCard.dataset.prodNames = g.products.map(p => p.name).join(' | ');
 
             // Contenedor del recibo imprimible
             const receipt = document.createElement('div');
@@ -2331,10 +2345,12 @@ function createProductCard(p, i) {
         });
 
         // Renderizar tarjeta de prendas disponibles (si hay)
-        if (filteredAvailable.length > 0) {
+        if (availableProducts.length > 0) {
             const availCard = document.createElement('div');
             availCard.className = 'summary-group-card';
             availCard.id = 'group-card-disponibles';
+            availCard.dataset.compName = 'disponibles';
+            availCard.dataset.prodNames = availableProducts.map(p => p.name).join(' | ');
 
             // Contenedor del recibo imprimible
             const receipt = document.createElement('div');
@@ -2347,7 +2363,7 @@ function createProductCard(p, i) {
                 <i data-lucide="package"></i>
                 <div>
                     <span class="group-user-name">Prendas Disponibles</span>
-                    <span class="group-qty-badge">${filteredAvailable.length} ${filteredAvailable.length === 1 ? 'producto' : 'productos'}</span>
+                    <span class="group-qty-badge">${availableProducts.length} ${availableProducts.length === 1 ? 'producto' : 'productos'}</span>
                 </div>
             </div>
             <div class="group-totals-actions">
@@ -2360,7 +2376,7 @@ function createProductCard(p, i) {
             const grid = document.createElement('div');
             grid.className = 'summary-group-products-grid';
 
-            filteredAvailable.forEach(p => {
+            availableProducts.forEach(p => {
                 const item = document.createElement('div');
                 item.className = 'summary-product-item';
 
@@ -2381,7 +2397,7 @@ function createProductCard(p, i) {
             });
 
             // Fecha del último producto disponible modificado
-            const lastModifiedTimeAvail = Math.max(...filteredAvailable.map(p => getLatestHistoryDate(p).getTime()));
+            const lastModifiedTimeAvail = Math.max(...availableProducts.map(p => getLatestHistoryDate(p).getTime()));
             const lastModifiedDateAvail = new Date(lastModifiedTimeAvail);
             const dateStrAvail = lastModifiedDateAvail.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
 
@@ -2405,6 +2421,9 @@ function createProductCard(p, i) {
                 await copyCardAsImage(receipt, btnCopy);
             });
         }
+
+        // Aplicar el filtro de búsqueda actual al finalizar el renderizado
+        filterSummaryView();
 
         if (window.lucide) lucide.createIcons();
     }
@@ -2822,10 +2841,10 @@ function createProductCard(p, i) {
         btnCloseDeliveries.addEventListener('click', closeDeliveriesView);
     }
     if (deliverySearchInput) {
-        deliverySearchInput.addEventListener('input', () => {
+        deliverySearchInput.addEventListener('input', debounce(() => {
             deliverySearchTerm = deliverySearchInput.value.trim();
             filterDeliveries();
-        });
+        }, 100));
     }
 
 if (document.readyState === 'loading') {
