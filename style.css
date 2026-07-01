@@ -2990,6 +2990,15 @@ kbd.kbd-hint {
     background: rgba(0, 0, 0, 0.015);
 }
 
+/* Variante sin estatus: solo muestra la fecha, sin panel visual */
+.past-delivery-status-box--no-status {
+    background: none;
+    border: none;
+    padding: 0;
+    align-self: flex-end;
+    width: auto;
+}
+
 /* Responsive para tarjetas de entrega */
 @media (max-width: 640px) {
     .delivery-card-body {

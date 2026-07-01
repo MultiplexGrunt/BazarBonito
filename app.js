@@ -2951,17 +2951,41 @@ function createProductCard(p, i) {
                     </div>
                 `;
             } else {
-                const isPagado = res.delivery.status === 'pagado';
-                const statusLabel = isPagado ? 'Pagado' : 'Pendiente';
-                const statusBadgeClass = isPagado ? 'status-pagado-badge' : 'status-pendiente-badge';
-                const statusIcon = isPagado ? 'check' : 'clock';
+                // Umbral: solo listas creadas a partir del 29 de junio de 2026 tienen estatus de entrega
+                const STATUS_THRESHOLD = new Date('2026-06-29T00:00:00');
+                const listDate = new Date(res.listCreatedAt);
+                const hasStatusData = listDate >= STATUS_THRESHOLD;
 
-                let deliveryDetailText = '';
-                if (res.delivery.paymentType || res.delivery.lugar) {
-                    const detailParts = [];
-                    if (res.delivery.paymentType) detailParts.push(res.delivery.paymentType.toUpperCase());
-                    if (res.delivery.lugar) detailParts.push(res.delivery.lugar);
-                    deliveryDetailText = ` (${detailParts.join(' en ')})`;
+                let statusBoxHtml = '';
+                if (hasStatusData) {
+                    const isPagado = res.delivery.status === 'pagado';
+                    const statusLabel = isPagado ? 'Pagado' : 'Pendiente';
+                    const statusBadgeClass = isPagado ? 'status-pagado-badge' : 'status-pendiente-badge';
+                    const statusIcon = isPagado ? 'check' : 'clock';
+
+                    let deliveryDetailText = '';
+                    if (res.delivery.paymentType || res.delivery.lugar) {
+                        const detailParts = [];
+                        if (res.delivery.paymentType) detailParts.push(res.delivery.paymentType.toUpperCase());
+                        if (res.delivery.lugar) detailParts.push(res.delivery.lugar);
+                        deliveryDetailText = ` (${detailParts.join(' en ')})`;
+                    }
+
+                    statusBoxHtml = `
+                        <div class="past-delivery-status-box">
+                            <span class="${statusBadgeClass}">
+                                <i data-lucide="${statusIcon}"></i>
+                                ${statusLabel}${deliveryDetailText}
+                            </span>
+                            <span class="past-date-label">Creada: ${listDate.toLocaleDateString('es-ES')}</span>
+                        </div>
+                    `;
+                } else {
+                    statusBoxHtml = `
+                        <div class="past-delivery-status-box past-delivery-status-box--no-status">
+                            <span class="past-date-label">Creada: ${listDate.toLocaleDateString('es-ES')}</span>
+                        </div>
+                    `;
                 }
 
                 row.innerHTML = `
@@ -2978,13 +3002,7 @@ function createProductCard(p, i) {
                     </div>
                     <div class="delivery-card-body">
                         ${imagesHtml}
-                        <div class="past-delivery-status-box">
-                            <span class="${statusBadgeClass}">
-                                <i data-lucide="${statusIcon}"></i>
-                                ${statusLabel}${deliveryDetailText}
-                            </span>
-                            <span class="past-date-label">Creada: ${new Date(res.listCreatedAt).toLocaleDateString('es-ES')}</span>
-                        </div>
+                        ${statusBoxHtml}
                     </div>
                 `;
             }
