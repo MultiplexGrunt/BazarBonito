@@ -157,16 +157,8 @@ const db = {
 
             for (const d of querySnapshot.docs) {
                 const listaData = d.data();
-                // Cargar los productos correspondientes desde su subcolección
-                const prodSnapshot = await getDocs(collection(firestoreDb, "listas", d.id, "productos"));
-                const prodList = [];
-                prodSnapshot.forEach((pDoc) => {
-                    prodList.push(pDoc.data());
-                });
-                // Ordenar los productos por fecha de creación (de más recientes a más antiguos)
-                prodList.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-                listaData.products = prodList;
+                // No precargar subcolecciones de productos por rendimiento (Lazy Loading)
+                listaData.products = [];
                 fetchedLists.push(listaData);
             }
 
@@ -409,9 +401,8 @@ async function loadFromStorage() {
             await db.saveConfig('activeListId', activeListId);
         }
 
-        // Cargar productos de la lista activa
-        const activeList = lists.find(l => l.id === activeListId);
-        products = activeList ? activeList.products : [];
+        // Cargar productos de la lista activa (inicialmente vacío por carga diferida)
+        products = [];
     } catch (err) {
         showToast('error', 'Error al cargar de la base de datos: ' + err.message);
         products = [];
@@ -1919,6 +1910,7 @@ function createProductCard(p, i) {
     // Exportar copia de seguridad (backup JSON)
     async function handleExportBackup() {
         try {
+            showToast('info', 'Generando copia de seguridad, por favor espera...');
             const allLists = await db.getLists();
             const activeId = await db.getConfig('activeListId');
 
@@ -1927,8 +1919,16 @@ function createProductCard(p, i) {
                 return;
             }
 
-            // Obtener las entregas de cada lista y agregarlas al backup
+            // Cargar de forma explícita los productos y entregas de cada lista para el backup
             for (const lista of allLists) {
+                const prodSnapshot = await getDocs(collection(firestoreDb, "listas", lista.id, "productos"));
+                const prodList = [];
+                prodSnapshot.forEach((pDoc) => {
+                    prodList.push(pDoc.data());
+                });
+                prodList.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                lista.products = prodList;
+
                 lista.entregas = await db.getDeliveries(lista.id);
             }
 
