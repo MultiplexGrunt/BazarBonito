@@ -2690,6 +2690,12 @@ function createProductCard(p, i) {
             if (visible) visibleCount++;
         });
 
+        // Ocultar barra de filtros si hay búsqueda activa por texto (libera espacio en móvil)
+        const filtersBar = deliveriesView ? deliveriesView.querySelector('.deliveries-filters-bar') : null;
+        if (filtersBar) {
+            filtersBar.style.display = term ? 'none' : 'grid';
+        }
+
         // Ocultar métricas si hay filtros o búsquedas activas (optimización móvil)
         const hasActiveFilters = term || deliveryFilterStatus !== 'todos' || deliveryFilterPlace !== 'todos' || deliveryFilterPayment !== 'todos';
         const statsGrid = deliveriesView ? deliveriesView.querySelector('.summary-stats-grid') : null;
