@@ -60,6 +60,10 @@ let lastUpdatedProductId = null; // ID del producto que se acaba de agregar o ac
 let activeDeliveries = [];     // entregas de la lista activa
 let unsubscribeActiveDeliveries = null; // función para desvincular el listener de entregas
 let deliverySearchTerm = '';   // término de búsqueda de entregas
+let deliveryFilterStatus = 'todos';     // 'todos', 'pendiente', 'pagado'
+let deliveryFilterPlace = 'todos';      // 'todos', 'Tuxtla', 'Berriozabal', etc.
+let deliveryFilterPayment = 'todos';    // 'todos', 'efectivo', 'transferencia', 'sin_especificar'
+let deliverySortBy = 'name-asc';        // 'name-asc', 'items-desc', 'items-asc', 'total-desc', 'total-asc'
 
 /**
  * Escucha los productos de la lista activa en tiempo real desde Firestore
@@ -2599,6 +2603,32 @@ function createProductCard(p, i) {
     // ── SECCIÓN ENTREGAS ──────────────────────────────────────────
 
     function openDeliveriesView() {
+        // Resetear variables de filtros al abrir
+        deliverySearchTerm = '';
+        deliveryFilterStatus = 'todos';
+        deliveryFilterPlace = 'todos';
+        deliveryFilterPayment = 'todos';
+        deliverySortBy = 'name-asc';
+
+        // Sincronizar UI de filtros
+        if (deliverySearchInput) deliverySearchInput.value = '';
+        
+        const statusSegments = document.querySelectorAll('#delivery-filter-status .btn-segment');
+        statusSegments.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.value === 'todos');
+        });
+
+        const paymentSegments = document.querySelectorAll('#delivery-filter-payment .btn-segment');
+        paymentSegments.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.value === 'todos');
+        });
+
+        const placeSelect = document.getElementById('delivery-filter-place');
+        if (placeSelect) placeSelect.value = 'todos';
+
+        const sortBySelect = document.getElementById('delivery-sort-by');
+        if (sortBySelect) sortBySelect.value = 'name-asc';
+
         renderDeliveries();
         deliveriesView.style.display = 'flex';
         document.body.style.overflow = 'hidden';
@@ -2615,28 +2645,67 @@ function createProductCard(p, i) {
     }
 
     function filterDeliveries() {
-        const term = deliverySearchTerm.toLowerCase();
+        const term = deliverySearchTerm.toLowerCase().trim();
         const rows = Array.from(deliveriesList.querySelectorAll('.delivery-row'));
         let visibleCount = 0;
 
         rows.forEach(row => {
             const name = row.dataset.compradora.toLowerCase();
-            const match = name.includes(term);
-            row.style.display = match ? 'flex' : 'none';
-            if (match) visibleCount++;
+            const prodNames = row.dataset.prodNames ? row.dataset.prodNames.toLowerCase() : '';
+            const status = row.dataset.status;
+            const lugar = row.dataset.lugar;
+            const paymentType = row.dataset.paymentType;
+
+            // 1. Filtrar por búsqueda de texto
+            const matchSearch = name.includes(term) || prodNames.includes(term);
+
+            // 2. Filtrar por estatus
+            let matchStatus = true;
+            if (deliveryFilterStatus !== 'todos') {
+                matchStatus = (status === deliveryFilterStatus);
+            }
+
+            // 3. Filtrar por lugar
+            let matchPlace = true;
+            if (deliveryFilterPlace !== 'todos') {
+                if (deliveryFilterPlace === 'sin_especificar') {
+                    matchPlace = (lugar === '');
+                } else {
+                    matchPlace = (lugar === deliveryFilterPlace);
+                }
+            }
+
+            // 4. Filtrar por tipo de pago
+            let matchPayment = true;
+            if (deliveryFilterPayment !== 'todos') {
+                if (deliveryFilterPayment === 'sin_especificar') {
+                    matchPayment = (paymentType === '');
+                } else {
+                    matchPayment = (paymentType === deliveryFilterPayment);
+                }
+            }
+
+            const visible = matchSearch && matchStatus && matchPlace && matchPayment;
+            row.style.display = visible ? 'flex' : 'none';
+            if (visible) visibleCount++;
         });
 
-        // Ocultar métricas si hay búsqueda activa (libera espacio en móvil)
+        // Ocultar métricas si hay filtros o búsquedas activas (optimización móvil)
+        const hasActiveFilters = term || deliveryFilterStatus !== 'todos' || deliveryFilterPlace !== 'todos' || deliveryFilterPayment !== 'todos';
         const statsGrid = deliveriesView ? deliveriesView.querySelector('.summary-stats-grid') : null;
-        if (statsGrid) statsGrid.style.display = term ? 'none' : '';
+        if (statsGrid) statsGrid.style.display = hasActiveFilters ? 'none' : '';
 
         // Actualizar vistas vacías
         if (rows.length === 0) {
             deliveriesList.style.display = 'none';
             deliveriesEmptyState.style.display = 'block';
+            deliveriesEmptyState.querySelector('h2').textContent = 'Sin entregas que mostrar';
+            deliveriesEmptyState.querySelector('p').textContent = 'Adjudica productos a compradoras para ver e iniciar la gestión de entregas.';
         } else if (visibleCount === 0) {
             deliveriesList.style.display = 'none';
             deliveriesEmptyState.style.display = 'block';
+            deliveriesEmptyState.querySelector('h2').textContent = 'Sin coincidencias';
+            deliveriesEmptyState.querySelector('p').textContent = 'No hay entregas que coincidan con los filtros aplicados.';
         } else {
             deliveriesList.style.display = 'flex';
             deliveriesEmptyState.style.display = 'none';
@@ -2655,7 +2724,20 @@ function createProductCard(p, i) {
             if (p.image) buyerMap[name].images.push({ src: p.image, name: p.name });
         });
 
-        const buyerNames = Object.keys(buyerMap).sort((a, b) => a.localeCompare(b, 'es'));
+        let buyerNames = Object.keys(buyerMap);
+
+        // Aplicar ordenamiento dinámico
+        if (deliverySortBy === 'name-asc') {
+            buyerNames.sort((a, b) => a.localeCompare(b, 'es'));
+        } else if (deliverySortBy === 'items-desc') {
+            buyerNames.sort((a, b) => buyerMap[b].items.length - buyerMap[a].items.length);
+        } else if (deliverySortBy === 'items-asc') {
+            buyerNames.sort((a, b) => buyerMap[a].items.length - buyerMap[b].items.length);
+        } else if (deliverySortBy === 'total-desc') {
+            buyerNames.sort((a, b) => buyerMap[b].total - buyerMap[a].total);
+        } else if (deliverySortBy === 'total-asc') {
+            buyerNames.sort((a, b) => buyerMap[a].total - buyerMap[b].total);
+        }
 
         // Calcular métricas rápidas (siempre sobre todos, no el filtrado)
         let totalMoney = 0;
@@ -2711,6 +2793,10 @@ function createProductCard(p, i) {
             const row = document.createElement('div');
             row.className = 'delivery-row';
             row.dataset.compradora = name;
+            row.dataset.status = delivery.status;
+            row.dataset.lugar = delivery.lugar || '';
+            row.dataset.paymentType = delivery.paymentType || '';
+            row.dataset.prodNames = buyerData.items.map(i => i.name).join(' | ');
 
             row.innerHTML = `
                 <!-- Cabecera: nombre + total -->
@@ -2854,6 +2940,46 @@ function createProductCard(p, i) {
             deliverySearchTerm = deliverySearchInput.value.trim();
             filterDeliveries();
         }, 100));
+    }
+
+    // Filtros de estatus de entregas (segmentados)
+    const statusSegments = document.querySelectorAll('#delivery-filter-status .btn-segment');
+    statusSegments.forEach(btn => {
+        btn.addEventListener('click', () => {
+            statusSegments.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            deliveryFilterStatus = btn.dataset.value;
+            filterDeliveries();
+        });
+    });
+
+    // Filtros de método de pago (segmentados)
+    const paymentSegments = document.querySelectorAll('#delivery-filter-payment .btn-segment');
+    paymentSegments.forEach(btn => {
+        btn.addEventListener('click', () => {
+            paymentSegments.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            deliveryFilterPayment = btn.dataset.value;
+            filterDeliveries();
+        });
+    });
+
+    // Filtros de lugar de entrega (select)
+    const placeSelect = document.getElementById('delivery-filter-place');
+    if (placeSelect) {
+        placeSelect.addEventListener('change', () => {
+            deliveryFilterPlace = placeSelect.value;
+            filterDeliveries();
+        });
+    }
+
+    // Ordenamiento de entregas (select)
+    const sortBySelect = document.getElementById('delivery-sort-by');
+    if (sortBySelect) {
+        sortBySelect.addEventListener('change', () => {
+            deliverySortBy = sortBySelect.value;
+            renderDeliveries(); // Volver a pintar para aplicar el orden en el DOM
+        });
     }
 
 if (document.readyState === 'loading') {

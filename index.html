@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=26">
+    <link rel="stylesheet" href="style.css?v=27">
     <script src="https://unpkg.com/lucide@latest" defer></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js" defer></script>
 </head>
@@ -516,6 +516,49 @@
                 </div>
             </div>
 
+            <!-- Barra de filtros de entregas -->
+            <div class="deliveries-filters-bar">
+                <div class="filter-group">
+                    <label><i data-lucide="filter"></i> Estatus</label>
+                    <div class="segmented-control" id="delivery-filter-status">
+                        <button type="button" class="btn-segment active" data-value="todos">Todos</button>
+                        <button type="button" class="btn-segment" data-value="pendiente">Pendientes</button>
+                        <button type="button" class="btn-segment" data-value="pagado">Pagados</button>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label><i data-lucide="map-pin"></i> Lugar</label>
+                    <select id="delivery-filter-place" class="filter-select">
+                        <option value="todos">Todos los lugares</option>
+                        <option value="Tuxtla">Tuxtla</option>
+                        <option value="Berriozabal">Berriozabal</option>
+                        <option value="Patria">Patria</option>
+                        <option value="Shanka">Shanka</option>
+                        <option value="Otro">Otro</option>
+                        <option value="sin_especificar">— Sin especificar —</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label><i data-lucide="wallet"></i> Pago</label>
+                    <div class="segmented-control" id="delivery-filter-payment">
+                        <button type="button" class="btn-segment active" data-value="todos">Todos</button>
+                        <button type="button" class="btn-segment" data-value="efectivo">Efectivo</button>
+                        <button type="button" class="btn-segment" data-value="transferencia">Transferencia</button>
+                        <button type="button" class="btn-segment" data-value="sin_especificar">Sin especificar</button>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label><i data-lucide="arrow-up-down"></i> Ordenar por</label>
+                    <select id="delivery-sort-by" class="filter-select">
+                        <option value="name-asc">Nombre (A - Z)</option>
+                        <option value="items-desc">Más prendas</option>
+                        <option value="items-asc">Menos prendas</option>
+                        <option value="total-desc">Total ($) Mayor a Menor</option>
+                        <option value="total-asc">Total ($) Menor a Mayor</option>
+                    </select>
+                </div>
+            </div>
+
             <!-- Listado de entregas por compradora -->
             <div id="deliveries-list" class="deliveries-list">
                 <!-- Se renderiza dinámicamente -->
@@ -531,6 +574,6 @@
     </div>
 
     <div id="toast" class="toast" aria-live="polite"></div>
-    <script type="module" src="app.js?v=26"></script>
+    <script type="module" src="app.js?v=27"></script>
 </body>
 </html>

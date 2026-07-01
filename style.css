@@ -2557,6 +2557,126 @@ kbd.kbd-hint {
     }
 }
 
+/* Barra de filtros de entregas */
+.deliveries-filters-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px 20px;
+    margin-top: 14px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.deliveries-filters-bar .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.deliveries-filters-bar .filter-group label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.deliveries-filters-bar .filter-group label svg {
+    width: 12px;
+    height: 12px;
+}
+
+.deliveries-filters-bar .filter-select {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--text-1);
+    font-family: inherit;
+    font-size: 0.85rem;
+    padding: 8px 12px;
+    border-radius: 8px;
+    outline: none;
+    transition: var(--t);
+    cursor: pointer;
+}
+
+.deliveries-filters-bar .filter-select:hover,
+.deliveries-filters-bar .filter-select:focus {
+    border-color: var(--accent-h);
+    box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.12);
+}
+
+[data-theme="light"] .deliveries-filters-bar .filter-select:hover,
+[data-theme="light"] .deliveries-filters-bar .filter-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.12);
+}
+
+/* Controles segmentados premium */
+.segmented-control {
+    display: flex;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    padding: 2px;
+    gap: 2px;
+}
+
+.segmented-control .btn-segment {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-2);
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: var(--t);
+    text-align: center;
+    white-space: nowrap;
+}
+
+.segmented-control .btn-segment:hover {
+    color: var(--text-1);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+[data-theme="light"] .segmented-control .btn-segment:hover {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+.segmented-control .btn-segment.active {
+    background: var(--accent-h);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
+}
+
+[data-theme="light"] .segmented-control .btn-segment.active {
+    background: var(--accent);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(236, 72, 153, 0.25);
+}
+
+/* Responsividad extra para móviles en la barra de filtros */
+@media (max-width: 768px) {
+    .deliveries-filters-bar {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 12px 14px;
+    }
+}
+
 /* ── SECCIÓN DE CONTROL DE ENTREGAS ── */
 .deliveries-list {
     display: flex;
