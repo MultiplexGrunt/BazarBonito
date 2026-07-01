@@ -2628,9 +2628,9 @@ function createProductCard(p, i) {
             indicator.innerHTML = '<i data-lucide="loader" class="animate-spin" style="width: 14px; height: 14px;"></i> Cargando historial...';
             const header = document.querySelector('.summary-view-header');
             if (header) {
-                const closeBtn = document.getElementById('btn-close-deliveries');
-                if (closeBtn) {
-                    header.insertBefore(indicator, closeBtn);
+                const headerActions = header.querySelector('.summary-header-actions');
+                if (headerActions) {
+                    header.insertBefore(indicator, headerActions);
                 } else {
                     header.appendChild(indicator);
                 }
