@@ -456,8 +456,8 @@ function escHtml(s) {
         .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
 
-// Redimensiona y comprime imagen para ahorrar localStorage
-function fileToBase64(file, maxPx = 900, q = 0.82) {
+// Redimensiona y comprime imagen para ahorrar Firestore y ancho de banda
+function fileToBase64(file, maxPx = 650, q = 0.70) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onerror = () => reject(new Error('No se pudo leer el archivo'));
