@@ -327,57 +327,12 @@ const db = {
 };
 
 // Función auxiliar para migrar IndexedDB local (si existe) a Firestore la primera vez
-async function migrateIndexedDBToFirestore() {
-    return new Promise((resolve) => {
-        const request = indexedDB.open('SubastaDB', 1);
-        request.onsuccess = (e) => {
-            const idbInstance = e.target.result;
-            if (!idbInstance.objectStoreNames.contains('listas')) {
-                idbInstance.close();
-                resolve([]);
-                return;
-            }
-
-            const tx = idbInstance.transaction('listas', 'readonly');
-            const store = tx.objectStore('listas');
-            const getAllReq = store.getAll();
-
-            getAllReq.onsuccess = () => {
-                const localLists = getAllReq.result || [];
-                idbInstance.close();
-                resolve(localLists);
-            };
-            getAllReq.onerror = () => {
-                idbInstance.close();
-                resolve([]);
-            };
-        };
-        request.onerror = () => {
-            resolve([]);
-        };
-    });
-}
-
-// ── PERSISTENCIA Y MIGRACIÓN ─────────────────────────────────
+// ── PERSISTENCIA ─────────────────────────────────────────────
 async function loadFromStorage() {
     try {
         // Cargar listas e ID activo
         lists = await db.getLists();
         activeListId = await db.getConfig('activeListId');
-
-        // Lógica de migración si Firestore está vacío pero el usuario tiene IndexedDB local
-        if (lists.length === 0) {
-            const localLists = await migrateIndexedDBToFirestore();
-            if (localLists.length > 0) {
-                showToast('info', `Migrando ${localLists.length} lista(s) locales a la nube...`);
-                for (const localList of localLists) {
-                    await db.saveList(localList);
-                }
-                // Recargar desde Firestore tras migrar
-                lists = await db.getLists();
-                showToast('success', '¡Tus listas locales se migraron a la nube con éxito!');
-            }
-        }
 
         // Si no hay listas (primer uso absoluto), creamos la predeterminada
         if (lists.length === 0) {
@@ -406,37 +361,6 @@ async function loadFromStorage() {
     } catch (err) {
         showToast('error', 'Error al cargar de la base de datos: ' + err.message);
         products = [];
-    }
-}
-
-async function saveToStorage() {
-    try {
-        const activeList = lists.find(l => l.id === activeListId);
-        if (activeList) {
-            activeList.products = products;
-            activeList.updatedAt = new Date().toISOString();
-
-            // Guardar la metadata de la lista activa
-            const { products: listProducts, ...listaMeta } = activeList;
-            await setDoc(doc(firestoreDb, "listas", activeListId), listaMeta);
-
-            // Sincronizar productos en la subcolección de forma individual
-            if (Array.isArray(listProducts)) {
-                for (const prod of listProducts) {
-                    await setDoc(doc(firestoreDb, "listas", activeListId, "productos", prod.id), prod);
-                }
-            }
-
-            // Eliminar de Firestore los productos que ya no existen en la lista local en memoria (eliminados)
-            const prodSnapshot = await getDocs(collection(firestoreDb, "listas", activeListId, "productos"));
-            for (const pDoc of prodSnapshot.docs) {
-                if (!products.some(p => p.id === pDoc.id)) {
-                    await deleteDoc(doc(firestoreDb, "listas", activeListId, "productos", pDoc.id));
-                }
-            }
-        }
-    } catch (err) {
-        showToast('error', 'Error al guardar en la nube (Firestore).');
     }
 }
 
