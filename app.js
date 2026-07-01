@@ -2519,6 +2519,10 @@ function createProductCard(p, i) {
             const current = summaryView.scrollTop;
             const max = summaryView.scrollHeight - summaryView.clientHeight;
             return { current, max, container: summaryView };
+        } else if (deliveriesView && deliveriesView.style.display === 'flex') {
+            const current = deliveriesView.scrollTop;
+            const max = deliveriesView.scrollHeight - deliveriesView.clientHeight;
+            return { current, max, container: deliveriesView };
         } else {
             const current = window.scrollY;
             const max = document.documentElement.scrollHeight - window.innerHeight;
@@ -2572,6 +2576,9 @@ function createProductCard(p, i) {
         if (summaryView) {
             summaryView.addEventListener('scroll', updateScrollButton);
         }
+        if (deliveriesView) {
+            deliveriesView.addEventListener('scroll', updateScrollButton);
+        }
 
         if (btnScrollToggle) {
             btnScrollToggle.addEventListener('click', () => {
@@ -2595,6 +2602,7 @@ function createProductCard(p, i) {
         renderDeliveries();
         deliveriesView.style.display = 'flex';
         document.body.style.overflow = 'hidden';
+        updateScrollButton();
         if (window.lucide) lucide.createIcons();
     }
 
@@ -2603,6 +2611,7 @@ function createProductCard(p, i) {
         document.body.style.overflow = '';
         if (deliverySearchInput) deliverySearchInput.value = '';
         deliverySearchTerm = '';
+        updateScrollButton();
     }
 
     function filterDeliveries() {
