@@ -2586,6 +2586,35 @@ function createProductCard(p, i) {
         deliverySearchTerm = '';
     }
 
+    function filterDeliveries() {
+        const term = deliverySearchTerm.toLowerCase();
+        const rows = Array.from(deliveriesList.querySelectorAll('.delivery-row'));
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const name = row.dataset.compradora.toLowerCase();
+            const match = name.includes(term);
+            row.style.display = match ? 'flex' : 'none';
+            if (match) visibleCount++;
+        });
+
+        // Ocultar métricas si hay búsqueda activa (libera espacio en móvil)
+        const statsGrid = deliveriesView ? deliveriesView.querySelector('.summary-stats-grid') : null;
+        if (statsGrid) statsGrid.style.display = term ? 'none' : '';
+
+        // Actualizar vistas vacías
+        if (rows.length === 0) {
+            deliveriesList.style.display = 'none';
+            deliveriesEmptyState.style.display = 'block';
+        } else if (visibleCount === 0) {
+            deliveriesList.style.display = 'none';
+            deliveriesEmptyState.style.display = 'block';
+        } else {
+            deliveriesList.style.display = 'flex';
+            deliveriesEmptyState.style.display = 'none';
+        }
+    }
+
     function renderDeliveries() {
         // Construir mapa de compradora -> { total, items, images }
         const buyerMap = {};
@@ -2599,17 +2628,6 @@ function createProductCard(p, i) {
         });
 
         const buyerNames = Object.keys(buyerMap).sort((a, b) => a.localeCompare(b, 'es'));
-
-        // Aplicar búsqueda
-        const term = deliverySearchTerm.toLowerCase();
-        const filtered = buyerNames.filter(name => {
-            if (!term) return true;
-            return name.toLowerCase().includes(term);
-        });
-
-        // Ocultar métricas si hay búsqueda activa (libera espacio en móvil)
-        const statsGrid = deliveriesView ? deliveriesView.querySelector('.summary-stats-grid') : null;
-        if (statsGrid) statsGrid.style.display = term ? 'none' : '';
 
         // Calcular métricas rápidas (siempre sobre todos, no el filtrado)
         let totalMoney = 0;
@@ -2629,7 +2647,7 @@ function createProductCard(p, i) {
         if (deliveryStatPaidQty) deliveryStatPaidQty.textContent = `${paidCount} / ${buyerNames.length}`;
         if (deliveryStatPendingQty) deliveryStatPendingQty.textContent = `$${pendingMoney.toFixed(2)}`;
 
-        if (filtered.length === 0) {
+        if (buyerNames.length === 0) {
             deliveriesList.style.display = 'none';
             deliveriesEmptyState.style.display = 'block';
             return;
@@ -2639,7 +2657,7 @@ function createProductCard(p, i) {
         deliveriesEmptyState.style.display = 'none';
         deliveriesList.innerHTML = '';
 
-        filtered.forEach(name => {
+        buyerNames.forEach(name => {
             const buyerData = buyerMap[name];
             const delivery = activeDeliveries.find(d => d.compradora === name) || {
                 compradora: name,
@@ -2790,6 +2808,9 @@ function createProductCard(p, i) {
             });
         });
 
+        // Aplicar el filtro de búsqueda actual al finalizar el pintado
+        filterDeliveries();
+
         if (window.lucide) lucide.createIcons();
     }
 
@@ -2803,8 +2824,7 @@ function createProductCard(p, i) {
     if (deliverySearchInput) {
         deliverySearchInput.addEventListener('input', () => {
             deliverySearchTerm = deliverySearchInput.value.trim();
-            renderDeliveries();
-            if (window.lucide) lucide.createIcons();
+            filterDeliveries();
         });
     }
 
