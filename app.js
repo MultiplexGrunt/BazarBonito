@@ -535,6 +535,7 @@ const toolsDropdown = document.getElementById('tools-dropdown');
 const btnExportBackup = document.getElementById('btn-export-backup');
 const btnImportBackup = document.getElementById('btn-import-backup');
 const backupFileInput = document.getElementById('backup-file-input');
+const btnOptimizeImages = document.getElementById('btn-optimize-images');
 const listOptions = document.getElementById('list-options');
 const btnCreateList = document.getElementById('btn-create-list');
 const btnRenameList = document.getElementById('btn-rename-list');
@@ -1963,6 +1964,86 @@ function createProductCard(p, i) {
         }
     }
 
+    // Auxiliar para redimensionar y comprimir una cadena Base64 existente
+    function optimizeBase64Image(base64, maxPx = 650, q = 0.70) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onerror = () => reject(new Error('No se pudo cargar la imagen'));
+            img.onload = () => {
+                let { width: w, height: h } = img;
+                if (w > maxPx || h > maxPx) {
+                    const r = Math.min(maxPx / w, maxPx / h);
+                    w = Math.round(w * r);
+                    h = Math.round(h * r);
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = w; canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                resolve(canvas.toDataURL('image/jpeg', q));
+            };
+            img.src = base64;
+        });
+    }
+
+    // Proceso secuencial de optimización de imágenes en lote para Firestore
+    async function handleMassImageOptimization() {
+        if (!isAdmin) return;
+        const confirmMsg = `¿Deseas iniciar la optimización masiva de fotos existentes?\n\n` +
+            `Este proceso reducirá todas las imágenes de tu base de datos a un máximo de 650px y 70% de calidad.\n` +
+            `¡RECOMENDACIÓN!: Genera una copia de seguridad en el menú de herramientas antes de proceder.`;
+        
+        if (!confirm(confirmMsg)) return;
+
+        try {
+            showToast('info', 'Obteniendo listas de Firestore para optimizar...');
+            const allLists = await db.getLists();
+            let totalProcessed = 0;
+            let totalCompressed = 0;
+
+            for (let lIdx = 0; lIdx < allLists.length; lIdx++) {
+                const lista = allLists[lIdx];
+                const prodSnapshot = await getDocs(collection(firestoreDb, "listas", lista.id, "productos"));
+                const productsArray = [];
+                prodSnapshot.forEach(doc => {
+                    productsArray.push(doc.data());
+                });
+
+                for (let pIdx = 0; pIdx < productsArray.length; pIdx++) {
+                    const prod = productsArray[pIdx];
+                    if (prod.image && prod.image.startsWith('data:image/')) {
+                        showToast('info', `Comprimiendo: Lista ${lIdx + 1}/${allLists.length} (Prenda ${pIdx + 1}/${productsArray.length})...`);
+                        
+                        try {
+                            const optimized = await optimizeBase64Image(prod.image);
+                            if (optimized && optimized.length < prod.image.length) {
+                                prod.image = optimized;
+                                prod.updatedAt = new Date().toISOString();
+                                await db.saveProduct(lista.id, prod);
+                                totalCompressed++;
+                            }
+                        } catch (imgErr) {
+                            console.error(`Error al optimizar imagen de prenda ${prod.name}:`, imgErr);
+                        }
+                    }
+                    totalProcessed++;
+                }
+
+                if (lista.id === activeListId) {
+                    products = productsArray;
+                    lista.products = productsArray;
+                    renderProducts();
+                    updateCount();
+                }
+            }
+
+            showToast('success', `¡Optimización completada! Se analizaron ${totalProcessed} prendas y se comprimieron ${totalCompressed} imágenes.`);
+        } catch (err) {
+            console.error("Error en optimización masiva de fotos:", err);
+            showToast('error', 'Error al optimizar imágenes de Firestore: ' + err.message);
+        }
+    }
+
     if (btnExportBackup) {
         btnExportBackup.addEventListener('click', async () => {
             closeToolsDropdown();
@@ -1974,6 +2055,13 @@ function createProductCard(p, i) {
         btnImportBackup.addEventListener('click', () => {
             closeToolsDropdown();
             backupFileInput.click();
+        });
+    }
+
+    if (btnOptimizeImages) {
+        btnOptimizeImages.addEventListener('click', async () => {
+            closeToolsDropdown();
+            await handleMassImageOptimization();
         });
     }
 
