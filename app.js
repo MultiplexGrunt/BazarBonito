@@ -66,6 +66,7 @@ let deliveryFilterPayment = 'todos';    // 'todos', 'efectivo', 'transferencia',
 let deliverySortBy = 'name-asc';        // 'name-asc', 'items-desc', 'items-asc', 'total-desc', 'total-asc'
 let historicalDeliveriesData = null;    // Caché de datos de entregas pasadas
 let isLoadingHistory = false;
+let _isRebuildingDeliveries = false; // guardia para evitar bucle filterDeliveries <-> renderDeliveries
 
 /**
  * Escucha los productos de la lista activa en tiempo real desde Firestore
@@ -2734,6 +2735,19 @@ function createProductCard(p, i) {
         const rows = Array.from(deliveriesList.querySelectorAll('.delivery-row'));
 
         if (!term) {
+            // Si se borró la búsqueda y el DOM aún tiene restos de una búsqueda previa
+            // (filas past-list-row o DOM vacío cuando hay productos), reconstruir desde cero.
+            const hasPastRows = rows.some(r => r.classList.contains('past-list-row'));
+            const hasActiveRows = rows.some(r => !r.classList.contains('past-list-row'));
+            const needsRebuild = hasPastRows || (!hasActiveRows && products.length > 0);
+
+            if (needsRebuild && !_isRebuildingDeliveries) {
+                _isRebuildingDeliveries = true;
+                renderDeliveries();   // renderDeliveries llama a filterDeliveries al final
+                _isRebuildingDeliveries = false;
+                return;               // la llamada interna ya manejó el filtrado
+            }
+
             // Si el buscador por texto está vacío, mostramos solo entregas de la lista activa (DOM actual)
             let visibleCount = 0;
             rows.forEach(row => {
