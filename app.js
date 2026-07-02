@@ -629,6 +629,12 @@ function updateRoleUI() {
             if (linkBtnImgAction) linkBtnImgAction.style.display = 'none';
         }
     }
+
+    // 10. Ocultar cards de métricas globales en "Cuentas de Compradoras" para visitantes
+    const summaryStatsGrid = document.querySelector('.summary-stats-grid');
+    if (summaryStatsGrid) {
+        summaryStatsGrid.style.display = isAdmin ? 'grid' : 'none';
+    }
 }
 
 // Escuchar cambios de estado en Firebase Auth
@@ -2131,6 +2137,10 @@ function createProductCard(p, i) {
         summaryView.style.display = 'flex';
         document.body.style.overflow = 'hidden';
         updateScrollButton();
+
+        // Asegurar visibilidad de métricas según rol (puede estar abierto antes de que updateRoleUI aplique)
+        const statsGrid = summaryView.querySelector('.summary-stats-grid');
+        if (statsGrid) statsGrid.style.display = isAdmin ? 'grid' : 'none';
     });
 
     btnCloseSummary.addEventListener('click', () => {
