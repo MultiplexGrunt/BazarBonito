@@ -1505,15 +1505,41 @@ function createProductCard(p, i) {
     // Autocompletado del campo de Compradoras con Tab/Enter nativo
     function getAllBuyers() {
         const buyers = new Set();
+
+        // Fuente 1: lista activa (productos en memoria con priceHistory completo)
+        products.forEach(p => {
+            if (p.compradora && p.compradora.trim() !== '') {
+                buyers.add(p.compradora.trim());
+            }
+            // Incluir nombres/números del historial de precios de cada prenda
+            if (Array.isArray(p.priceHistory)) {
+                p.priceHistory.forEach(entry => {
+                    if (entry.compradora && entry.compradora.trim() !== '') {
+                        buyers.add(entry.compradora.trim());
+                    }
+                });
+            }
+        });
+
+        // Fuente 2: demás listas cargadas en memoria (pueden no tener priceHistory completo)
         lists.forEach(l => {
+            if (l.id === activeListId) return; // ya procesada arriba
             if (Array.isArray(l.products)) {
                 l.products.forEach(p => {
                     if (p.compradora && p.compradora.trim() !== '') {
                         buyers.add(p.compradora.trim());
                     }
+                    if (Array.isArray(p.priceHistory)) {
+                        p.priceHistory.forEach(entry => {
+                            if (entry.compradora && entry.compradora.trim() !== '') {
+                                buyers.add(entry.compradora.trim());
+                            }
+                        });
+                    }
                 });
             }
         });
+
         return Array.from(buyers);
     }
 
