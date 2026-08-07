@@ -67,6 +67,8 @@ let deliverySortBy = 'name-asc';        // 'name-asc', 'items-desc', 'items-asc'
 let historicalDeliveriesData = null;    // Caché de datos de entregas pasadas
 let isLoadingHistory = false;
 let _isRebuildingDeliveries = false; // guardia para evitar bucle filterDeliveries <-> renderDeliveries
+let compradoras = [];             // nombres/teléfonos cargados de la colección dedicada en Firestore
+let _compradorasMigrated = false; // evitar que la migración inicial corra más de una vez
 
 /**
  * Escucha los productos de la lista activa en tiempo real desde Firestore
@@ -368,6 +370,126 @@ async function loadFromStorage() {
     } catch (err) {
         showToast('error', 'Error al cargar de la base de datos: ' + err.message);
         products = [];
+    }
+}
+
+// ── COLECCIÓN DE COMPRADORAS ─────────────────────────────────────────────
+
+/**
+ * Genera un ID estable para Firestore a partir del nombre de la compradora.
+ * Elimina acentos, convierte a minúsculas y reemplaza espacios con guion bajo.
+ */
+function normalizeCompadoraId(name) {
+    return name.trim()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/\s+/g, '_')
+        .replace(/[^a-z0-9_]/g, '');
+}
+
+/**
+ * Carga todas las compradoras de la colección dedicada en Firestore.
+ * Es una lectura ligera (sin imágenes ni subcolecciones).
+ */
+async function loadCompradoras() {
+    try {
+        const snapshot = await getDocs(collection(firestoreDb, 'compradoras'));
+        compradoras = [];
+        snapshot.forEach(d => {
+            const data = d.data();
+            if (data.name) compradoras.push(data.name);
+        });
+    } catch (err) {
+        console.warn('No se pudo cargar la colección de compradoras:', err);
+        // No es crítico — el fallback en getAllBuyers() cubre este caso
+    }
+}
+
+/**
+ * Inserta o actualiza un registro de compradora en Firestore.
+ * Diseñado para ser fire-and-forget (no bloquea la UI).
+ */
+async function upsertCompradora(name) {
+    if (!name || !name.trim()) return;
+    const trimmed = name.trim();
+    const id = normalizeCompadoraId(trimmed);
+    if (!id) return;
+    try {
+        await setDoc(
+            doc(firestoreDb, 'compradoras', id),
+            { name: trimmed, updatedAt: new Date().toISOString() },
+            { merge: true }
+        );
+        // Actualizar el caché local si no estaba ya
+        if (!compradoras.includes(trimmed)) {
+            compradoras.push(trimmed);
+        }
+    } catch (err) {
+        console.warn('Error al guardar compradora en colección:', err);
+    }
+}
+
+/**
+ * Migración única: escanea todos los productos de todas las listas y
+ * puebla la colección `compradoras` si está vacía.
+ * Se ejecuta en background la primera vez que el admin abre la app.
+ */
+async function migrateCompradoras() {
+    if (_compradorasMigrated) return;
+    _compradorasMigrated = true;
+
+    try {
+        // Solo migrar si la colección está realmente vacía
+        const check = await getDocs(collection(firestoreDb, 'compradoras'));
+        if (!check.empty) return; // Ya tiene datos, no es necesario migrar
+
+        const seen = new Map(); // id → name
+
+        const processProduct = (p) => {
+            const addName = (name) => {
+                if (!name || !name.trim()) return;
+                const trimmed = name.trim();
+                const id = normalizeCompadoraId(trimmed);
+                if (!id || seen.has(id)) return;
+                seen.set(id, trimmed);
+            };
+            addName(p.compradora);
+            if (Array.isArray(p.priceHistory)) {
+                p.priceHistory.forEach(entry => addName(entry.compradora));
+            }
+        };
+
+        // Lista activa (ya en memoria)
+        products.forEach(processProduct);
+
+        // Demás listas (cargar productos en background)
+        const otherLists = lists.filter(l => l.id !== activeListId);
+        for (const lista of otherLists) {
+            try {
+                const snap = await getDocs(collection(firestoreDb, 'listas', lista.id, 'productos'));
+                snap.forEach(d => processProduct(d.data()));
+            } catch (e) {
+                console.warn(`Migración: error al leer lista "${lista.name}":`, e);
+            }
+        }
+
+        if (seen.size === 0) return;
+
+        // Escribir en lotes (límite 500 por batch — más que suficiente para este caso)
+        const batch = writeBatch(firestoreDb);
+        const now = new Date().toISOString();
+        seen.forEach((name, id) => {
+            batch.set(doc(firestoreDb, 'compradoras', id), { name, updatedAt: now });
+        });
+        await batch.commit();
+
+        // Recargar el caché local con los datos recién migrados
+        await loadCompradoras();
+        console.log(`Migración de compradoras completada: ${seen.size} registros.`);
+    } catch (err) {
+        console.warn('Error durante la migración de compradoras:', err);
+        _compradorasMigrated = false; // Permitir reintento la próxima vez
     }
 }
 
@@ -1479,6 +1601,9 @@ function createProductCard(p, i) {
             .then(() => db.updateListMetadata(activeListId, activeList ? activeList.name : ''))
             .catch(err => showToast('error', 'Error al guardar cambios: ' + err.message));
 
+        // Registrar la compradora en la colección dedicada (fire-and-forget)
+        if (newComp) upsertCompradora(newComp);
+
         closeEditModal();
         renderProducts();
         showToast('success', 'Cambios guardados.');
@@ -1504,14 +1629,18 @@ function createProductCard(p, i) {
 
     // Autocompletado del campo de Compradoras con Tab/Enter nativo
     function getAllBuyers() {
+        // Preferir la colección dedicada si ya fue cargada desde Firestore
+        if (compradoras.length > 0) {
+            return compradoras;
+        }
+
+        // Fallback: escanear productos en memoria (primera carga o sin conexión)
         const buyers = new Set();
 
-        // Fuente 1: lista activa (productos en memoria con priceHistory completo)
         products.forEach(p => {
             if (p.compradora && p.compradora.trim() !== '') {
                 buyers.add(p.compradora.trim());
             }
-            // Incluir nombres/números del historial de precios de cada prenda
             if (Array.isArray(p.priceHistory)) {
                 p.priceHistory.forEach(entry => {
                     if (entry.compradora && entry.compradora.trim() !== '') {
@@ -1521,9 +1650,8 @@ function createProductCard(p, i) {
             }
         });
 
-        // Fuente 2: demás listas cargadas en memoria (pueden no tener priceHistory completo)
         lists.forEach(l => {
-            if (l.id === activeListId) return; // ya procesada arriba
+            if (l.id === activeListId) return;
             if (Array.isArray(l.products)) {
                 l.products.forEach(p => {
                     if (p.compradora && p.compradora.trim() !== '') {
@@ -2621,6 +2749,14 @@ function createProductCard(p, i) {
             // Iniciar la escucha en tiempo real de productos
             listenToActiveListProducts();
             listenToActiveListDeliveries();
+
+            // Cargar compradoras desde la colección dedicada (liviana, en background)
+            loadCompradoras().then(() => {
+                // Si es admin y la colección está vacía, migrar datos históricos en background
+                if (isAdmin) {
+                    setTimeout(() => migrateCompradoras(), 2000);
+                }
+            });
         } catch (err) {
             showToast('error', 'Error al inicializar la base de datos.');
             renderProducts();
