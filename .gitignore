@@ -22,4 +22,5 @@ node_modules/
 backup.json
 gemini.exe
 
-
+# Android widget build project
+android_widget/
