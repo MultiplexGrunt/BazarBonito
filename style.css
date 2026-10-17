@@ -744,7 +744,6 @@ kbd.kbd-hint {
     display: block;
     transition: transform 0.3s ease;
 }
-.product-card:hover .card-image img { transform: scale(1.03); }
 
 .card-no-image {
     display: flex;
