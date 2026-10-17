@@ -811,7 +811,7 @@ kbd.kbd-hint {
 }
 .card-compradora-info svg { width: 11px; height: 11px; }
 
-/* ── HOVER PREVIEW FLOTANTE ── */
+/* ── HOVER PREVIEW FLOTANTE ── 
 .hover-preview {
     position: fixed;
     z-index: 600;
@@ -837,7 +837,7 @@ kbd.kbd-hint {
     object-fit: contain;
     display: block;
 }
-
+*/
 /* ── ESTADO VACÍO ── */
 .empty-state {
     display: flex;
