@@ -1124,54 +1124,6 @@ function getFiltered() {
     return result;
 }
 
-// ── HOVER PREVIEW (imagen flotante al pasar el mouse, con retardo de 3s) ──────────────────
-let hoverPreviewEl = null;
-let hoverPreviewTimer = null;
-
-function getHoverPreview() {
-    if (!hoverPreviewEl) {
-        hoverPreviewEl = document.createElement('div');
-        hoverPreviewEl.className = 'hover-preview';
-        hoverPreviewEl.innerHTML = '<img alt="Vista rápida">';
-        document.body.appendChild(hoverPreviewEl);
-    }
-    return hoverPreviewEl;
-}
-
-function showHoverPreview(imgSrc, event) {
-    // Cancelar cualquier temporizador previo antes de iniciar uno nuevo
-    clearTimeout(hoverPreviewTimer);
-
-    // Guardar la posición del evento para usarla cuando dispare el timer
-    let lastEvent = event;
-
-    hoverPreviewTimer = setTimeout(() => {
-        const el = getHoverPreview();
-        el.querySelector('img').src = imgSrc;
-        el.classList.add('visible');
-        positionHoverPreview(lastEvent);
-    }, 3000);
-}
-
-function positionHoverPreview(event) {
-    if (!hoverPreviewEl || !hoverPreviewEl.classList.contains('visible')) return;
-    const SIZE = 320;
-    let x = event.clientX + 24;
-    let y = event.clientY - SIZE / 2;
-    if (x + SIZE > window.innerWidth - 10) x = event.clientX - SIZE - 24;
-    if (y < 10) y = 10;
-    if (y + SIZE > window.innerHeight - 10) y = window.innerHeight - SIZE - 10;
-    hoverPreviewEl.style.left = x + 'px';
-    hoverPreviewEl.style.top = y + 'px';
-}
-
-function hideHoverPreview() {
-    // Cancelar el temporizador si el cursor sale antes de los 3 segundos
-    clearTimeout(hoverPreviewTimer);
-    hoverPreviewTimer = null;
-    if (hoverPreviewEl) hoverPreviewEl.classList.remove('visible');
-}
-
 function renderProducts() {
     const filtered = getFiltered();
 
@@ -1274,15 +1226,6 @@ function createProductCard(p, i) {
             ${p.compradora ? `<div class="card-compradora-info"><i data-lucide="user-check"></i>${escHtml(p.compradora)}</div>` : ''}
         </div>
     `;
-
-    // Hover preview sobre la imagen (solo para administrador, con retardo de 3 segundos)
-    if (p.image && isAdmin) {
-        const imgDiv = card.querySelector('.card-image');
-        imgDiv.addEventListener('mouseenter', e => showHoverPreview(p.image, e));
-        imgDiv.addEventListener('mouseleave', () => hideHoverPreview());
-        // mousemove actualiza posición solo si ya es visible (no afecta el timer)
-        imgDiv.addEventListener('mousemove', e => positionHoverPreview(e));
-    }
 
     card.addEventListener('click', () => {
         if (isAdmin) {

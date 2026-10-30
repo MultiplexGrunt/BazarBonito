@@ -111,11 +111,6 @@
     border: 1px solid rgba(236, 72, 153, 0.2);
     color: var(--text-2);
 }
-[data-theme="light"] .hover-preview {
-    background: var(--bg-card);
-    border-color: rgba(236, 72, 153, 0.4);
-    box-shadow: 0 24px 80px rgba(236, 72, 153, 0.15), 0 0 0 1px rgba(236, 72, 153, 0.1);
-}
 [data-theme="light"] .summary-view-backdrop {
     background: rgba(255, 240, 243, 0.94);
 }
@@ -811,33 +806,6 @@ kbd.kbd-hint {
 }
 .card-compradora-info svg { width: 11px; height: 11px; }
 
-/* ── HOVER PREVIEW FLOTANTE ── 
-.hover-preview {
-    position: fixed;
-    z-index: 600;
-    width: 320px;
-    height: 320px;
-    background: #060610;
-    border: 1px solid rgba(124,58,237,0.5);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    box-shadow: 0 24px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(124,58,237,0.15);
-    pointer-events: none;
-    opacity: 0;
-    transform: scale(0.88);
-    transition: opacity 0.18s ease, transform 0.18s cubic-bezier(.34,1.56,.64,1);
-}
-.hover-preview.visible {
-    opacity: 1;
-    transform: scale(1);
-}
-.hover-preview img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    display: block;
-}
-*/
 /* ── ESTADO VACÍO ── */
 .empty-state {
     display: flex;
