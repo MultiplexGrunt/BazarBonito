@@ -694,9 +694,13 @@ function updateRoleUI() {
         totalSoldEl.style.display = isAdmin ? 'inline-block' : 'none';
     }
 
-    // 5. Botón de cerrar sesión en el header
+    // 5. Botón de cerrar sesión y botón de login en el header
     if (btnLogout) {
         btnLogout.style.display = isAdmin ? 'inline-flex' : 'none';
+    }
+    const btnHeaderLogin = document.getElementById('btn-header-login');
+    if (btnHeaderLogin) {
+        btnHeaderLogin.style.display = isAdmin ? 'none' : 'inline-flex';
     }
     if (btnShowDeliveries) {
         btnShowDeliveries.style.display = isAdmin ? 'inline-flex' : 'none';
@@ -812,10 +816,57 @@ if (btnLogout) {
     btnLogout.addEventListener('click', async () => {
         if (confirm('¿Cerrar sesión de Administrador?')) {
             try {
+                // Si la sesión fue con PIN, simplemente la cerramos en local
+                if (!firebase || !firebaseAuth.currentUser) {
+                    isAdmin = false;
+                    userRoleDecided = true;
+                    updateRoleUI();
+                    renderProducts();
+                    showToast('success', 'Sesión cerrada. Ahora eres visitante.');
+                    return;
+                }
                 await signOut(firebaseAuth);
                 showToast('success', 'Sesión cerrada. Ahora eres visitante.');
             } catch (err) {
                 showToast('error', 'Error al cerrar sesión: ' + err.message);
+            }
+        }
+    });
+}
+
+// ── LOGIN ALTERNATIVO CON PIN (para Android y acceso rápido) ──
+const ADMIN_PIN = '1234';
+
+// Botón de login en header (candado) — abre el overlay de bienvenida
+const btnHeaderLogin = document.getElementById('btn-header-login');
+if (btnHeaderLogin) {
+    btnHeaderLogin.addEventListener('click', () => {
+        if (!isAdmin && welcomeOverlay) {
+            welcomeOverlay.style.display = 'flex';
+        }
+    });
+}
+
+// Formulario de PIN de Admin
+const pinLoginForm = document.getElementById('pin-login-form');
+const inputAdminPin = document.getElementById('input-admin-pin');
+if (pinLoginForm) {
+    pinLoginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const enteredPin = inputAdminPin ? inputAdminPin.value.trim() : '';
+        if (enteredPin === ADMIN_PIN) {
+            isAdmin = true;
+            userRoleDecided = true;
+            if (welcomeOverlay) welcomeOverlay.style.display = 'none';
+            updateRoleUI();
+            renderProducts();
+            showToast('success', '¡Bienvenido Administrador! (PIN)');
+            if (inputAdminPin) inputAdminPin.value = '';
+        } else {
+            showToast('error', 'PIN incorrecto. Inténtalo de nuevo.');
+            if (inputAdminPin) {
+                inputAdminPin.value = '';
+                inputAdminPin.focus();
             }
         }
     });
@@ -2617,8 +2668,31 @@ function createProductCard(p, i) {
     }
 
 
-    async function copyCardAsImage(cardElement, buttonElement) {
-        if (!window.html2canvas) {
+    // ── ABRIR WHATSAPP CON LA COMPRADORA ──────────────────────────────────────
+    // Detecta si el nombre de la compradora es un número de teléfono y, si lo es,
+    // abre WhatsApp directamente en ese chat (app nativa en Android, nueva pestaña en web).
+    function openWhatsAppForBuyer(compName) {
+        if (!compName) return;
+        // Limpiar: quitar espacios, guiones, paréntesis y signo +
+        const cleaned = compName.replace(/[\s\-\(\)\+]/g, '');
+        // Solo continuar si es un número de 10 a 13 dígitos
+        if (!/^\d{10,13}$/.test(cleaned)) return;
+
+        // Agregar lada de México (+52) si el número tiene solo 10 dígitos
+        const phone = cleaned.length === 10 ? `52${cleaned}` : cleaned;
+        const msgText = 'Hola, te mando tu resumen de compras de Bonito Bazar 🛍️';
+        const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(msgText)}`;
+
+        if (window.AndroidBridge && typeof window.AndroidBridge.openWhatsAppChat === 'function') {
+            // En Android: usar el bridge nativo para abrir WhatsApp directo
+            window.AndroidBridge.openWhatsAppChat(phone, msgText);
+        } else {
+            // En web: abrir en nueva pestaña
+            window.open(waUrl, '_blank');
+        }
+    }
+
+    async function copyCardAsImage(cardElement, buttonElement) {        if (!window.html2canvas) {
             showToast('error', 'Librería de captura no cargada. Revisa tu conexión.');
             return;
         }
@@ -2652,6 +2726,10 @@ function createProductCard(p, i) {
                         })
                     ]);
                     showToast('success', '¡Imagen del resumen copiada! Lista para enviar (Ctrl+V).');
+
+                    // Abrir chat de WhatsApp si la compradora tiene número de teléfono
+                    const compName = buttonElement.dataset.compName || '';
+                    openWhatsAppForBuyer(compName);
 
                     // Marcar la tarjeta como copiada e icono de check
                     cardElement.classList.add('copied');

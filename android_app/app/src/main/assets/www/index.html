@@ -123,6 +123,9 @@
                     <i data-lucide="sun" class="icon-sun"></i>
                     <i data-lucide="moon" class="icon-moon"></i>
                 </button>
+                <button id="btn-header-login" class="btn-icon" title="Acceso de Administrador" aria-label="Acceso de Administrador">
+                    <i data-lucide="lock"></i>
+                </button>
                 <button id="btn-logout" class="btn-icon danger" title="Cerrar sesión de Administrador" aria-label="Cerrar sesión de Administrador" style="display: none;">
                     <i data-lucide="log-out"></i>
                 </button>
@@ -458,9 +461,24 @@
                             <path fill="#EA4335" d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114A5.69 5.69 0 0 1 8.24 12.8a5.69 5.69 0 0 1 5.751-5.714c2.259 0 4.312 1.014 5.69 2.628l3.18-3.18C20.672 4.314 17.568 3 13.991 3 8.351 3 3.99 7.362 3.99 13s4.36 10 10.001 10c5.38 0 9.771-3.69 9.771-9.714 0-.61-.06-1.218-.182-1.8H12.24Z"/>
                         </svg>
                     </span>
-                    <span>Entrar como Administrador</span>
+                    <span>Entrar con Google</span>
                 </button>
-                <button id="btn-visitor" class="btn-welcome-action secondary">
+
+                <div class="pin-login-section">
+                    <div class="pin-divider"><span>O ingresa con tu PIN de Admin</span></div>
+                    <form id="pin-login-form" class="pin-form" autocomplete="off">
+                        <div class="pin-input-wrap">
+                            <input type="password" id="input-admin-pin" placeholder="PIN de Administrador (1234)" maxlength="20" autocomplete="current-password">
+                            <button type="submit" id="btn-login-pin" class="btn-pin-submit">
+                                <i data-lucide="key"></i>
+                                <span>Entrar</span>
+                            </button>
+                        </div>
+                        <p class="pin-hint">PIN por defecto: <strong>1234</strong> (fácil acceso en celular y web)</p>
+                    </form>
+                </div>
+
+                <button id="btn-visitor" class="btn-welcome-action secondary" style="margin-top: 10px;">
                     <i data-lucide="x"></i>
                     <span>Cerrar / Seguir como Visitante</span>
                 </button>

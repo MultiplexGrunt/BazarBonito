@@ -115,6 +115,25 @@ class MainActivity : AppCompatActivity() {
                 return assetLoader.shouldInterceptRequest(request.url)
             }
 
+            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                val url = request.url.toString()
+                if (url.startsWith("whatsapp://") || url.startsWith("https://wa.me/") || url.startsWith("https://api.whatsapp.com/")) {
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, request.url)
+                        intent.setPackage("com.whatsapp")
+                        try {
+                            startActivity(intent)
+                        } catch (e: Exception) {
+                            startActivity(Intent(Intent.ACTION_VIEW, request.url))
+                        }
+                        return true
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+                return false
+            }
+
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 isWebAppLoaded = true
