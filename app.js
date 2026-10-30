@@ -880,6 +880,7 @@ function closeForm() {
     btnToggleForm.setAttribute('aria-expanded', 'false');
     addForm.reset();
     clearFormImage();
+    resetTallaChips();
 }
 
 /** Procesa un File de imagen y lo muestra en el formulario */
@@ -907,6 +908,66 @@ btnToggleForm.addEventListener('click', () => {
 });
 
 btnCancelForm.addEventListener('click', closeForm);
+
+// ── CHIPS RÁPIDOS DE TALLA (MÓVIL) ────────────────────────────────────────
+const tallaChips = document.querySelectorAll('.talla-chip');
+function resetTallaChips() {
+    tallaChips.forEach(c => {
+        if (c.dataset.talla === '') c.classList.add('active');
+        else c.classList.remove('active');
+    });
+}
+
+tallaChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+        tallaChips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        inputTalla.value = chip.dataset.talla;
+    });
+});
+
+inputTalla.addEventListener('change', () => {
+    tallaChips.forEach(c => {
+        if (c.dataset.talla === inputTalla.value) c.classList.add('active');
+        else c.classList.remove('active');
+    });
+});
+
+// ── BOTÓN FLOTANTE MÓVIL (FAB) ────────────────────────────────────────────
+const btnFabAdd = document.getElementById('btn-fab-add');
+if (btnFabAdd) {
+    btnFabAdd.addEventListener('click', () => {
+        openForm();
+        formPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(() => inputName.focus(), 80);
+        if (window.AndroidBridge && typeof window.AndroidBridge.vibrate === 'function') {
+            window.AndroidBridge.vibrate(35);
+        }
+    });
+}
+
+// ── INTEGRACIÓN CON ANDROID NATIVO (WhatsApp Share & Bridge) ──────────────
+window.onSharedImageReceived = function(base64Image) {
+    if (!base64Image) return;
+    setFormImage(base64Image);
+    formPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    showToast('success', '¡Imagen recibida de WhatsApp! Escribe el nombre y precio.');
+    if (window.AndroidBridge && typeof window.AndroidBridge.vibrate === 'function') {
+        window.AndroidBridge.vibrate(40);
+    }
+};
+
+function checkAndroidPendingShare() {
+    if (window.AndroidBridge && typeof window.AndroidBridge.getPendingSharedImage === 'function') {
+        const pending = window.AndroidBridge.getPendingSharedImage();
+        if (pending) {
+            window.onSharedImageReceived(pending);
+        }
+    }
+    if (window.AndroidBridge && typeof window.AndroidBridge.onAppReady === 'function') {
+        window.AndroidBridge.onAppReady();
+    }
+}
 
 // ── DRAG GLOBAL (cualquier parte de la página) ───────────────
 let dragCounter = 0; // contador para manejar drag enter/leave en hijos
@@ -2700,6 +2761,9 @@ function createProductCard(p, i) {
                     setTimeout(() => migrateCompradoras(), 2000);
                 }
             });
+
+            // Verificar si hay imagen compartida desde WhatsApp en Android
+            checkAndroidPendingShare();
         } catch (err) {
             showToast('error', 'Error al inicializar la base de datos.');
             renderProducts();

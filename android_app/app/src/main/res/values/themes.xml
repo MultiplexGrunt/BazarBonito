@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.BazarBonito" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/bazar_pink</item>
+        <item name="colorPrimaryVariant">@color/bazar_pink</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="android:statusBarColor">@color/bazar_dark</item>
+        <item name="android:windowBackground">@color/bazar_dark</item>
+    </style>
+</resources>

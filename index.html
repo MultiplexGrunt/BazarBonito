@@ -179,6 +179,13 @@
                                         <option value="M">M</option>
                                         <option value="Ch">Ch</option>
                                     </select>
+                                    <div class="talla-quick-chips" id="talla-quick-chips">
+                                        <button type="button" class="talla-chip" data-talla="Ch">Ch</button>
+                                        <button type="button" class="talla-chip" data-talla="M">M</button>
+                                        <button type="button" class="talla-chip" data-talla="L">L</button>
+                                        <button type="button" class="talla-chip" data-talla="XL">XL</button>
+                                        <button type="button" class="talla-chip active" data-talla="">Sin Talla</button>
+                                    </div>
                                 </div>
                             </div>
                             <div class="form-submit-row">
@@ -576,6 +583,11 @@
             </div>
         </div>
     </div>
+
+    <!-- Botón flotante móvil para crear prenda rápida (Admin) -->
+    <button type="button" id="btn-fab-add" class="btn-fab-add" aria-label="Agregar prenda rápida" title="Agregar prenda">
+        <i data-lucide="plus"></i>
+    </button>
 
     <div id="toast" class="toast" aria-live="polite"></div>
     <script type="module" src="app.js?v=40"></script>

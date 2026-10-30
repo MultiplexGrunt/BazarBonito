@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.5"
+        android:scaleY="0.5"
+        android:translateX="27"
+        android:translateY="27">
+        <!-- Icono de Bazar / Mazo de subastas / Corazón -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M14,19.5 L14,17.5 L20,17.5 L20,19.5 L14,19.5 Z M18,5 L16.6,6.4 L18.2,8 L11,15.2 L9.6,13.8 L5.4,18 L9.6,22.2 L13.8,18 L12.4,16.6 L19.6,9.4 L21.2,11 L22.6,9.6 L18,5 Z" />
+    </group>
+</vector>
