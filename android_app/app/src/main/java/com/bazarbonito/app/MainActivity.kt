@@ -166,7 +166,12 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            // Manejador de ventanas popup (crucial para Google Sign-In)
+            // Manejador de ventanas popup (crucial para Google Sign-In).
+            // El popup es el flujo de Firebase Auth: abre el handler de
+            // Firebase, redirige a Google y vuelve al handler, que cierra
+            // la ventana con window.close() -> onCloseWindow. NO cerrar el
+            // diálogo al cargar el handler: es la primera página del flujo
+            // y cerrarlo ahí mata el inicio de sesión antes de ver Google.
             override fun onCreateWindow(
                 view: WebView?,
                 isDialog: Boolean,
@@ -178,6 +183,8 @@ class MainActivity : AppCompatActivity() {
                     this.settings.domStorageEnabled = true
                     this.settings.userAgentString = cleanUa
                 }
+                // Las cookies de terceros son necesarias para el login de Google
+                CookieManager.getInstance().setAcceptThirdPartyCookies(popupWebView, true)
 
                 val dialog = Dialog(this@MainActivity, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
                 dialog.setContentView(popupWebView)
@@ -186,16 +193,6 @@ class MainActivity : AppCompatActivity() {
                 popupWebView.webChromeClient = object : WebChromeClient() {
                     override fun onCloseWindow(window: WebView?) {
                         dialog.dismiss()
-                    }
-                }
-
-                popupWebView.webViewClient = object : WebViewClient() {
-                    override fun onPageFinished(view: WebView?, url: String?) {
-                        super.onPageFinished(view, url)
-                        // Si regresó a la app o completó OAuth de Firebase, cerrar popup
-                        if (url?.contains("__/__auth/handler") == true || url?.contains("bonitobazar-6adcc.firebaseapp.com") == true) {
-                            dialog.dismiss()
-                        }
                     }
                 }
 
