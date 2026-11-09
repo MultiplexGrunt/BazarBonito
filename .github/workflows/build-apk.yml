@@ -3,6 +3,8 @@ name: Compilar APK Android (Bazar Bonito)
 on:
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
   workflow_dispatch: # Permite ejecutar la compilación manualmente desde GitHub
 
 jobs:
