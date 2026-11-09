@@ -196,6 +196,20 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
+                // Sin un WebViewClient, las redirecciones del popup (Firebase
+                // -> Google -> Firebase) se abren en el navegador externo y
+                // el login se queda en una página en blanco sin forma de
+                // volver a la app. Todo http(s) se queda dentro del popup.
+                popupWebView.webViewClient = object : WebViewClient() {
+                    override fun shouldOverrideUrlLoading(
+                        view: WebView?,
+                        request: WebResourceRequest
+                    ): Boolean {
+                        val url = request.url.toString()
+                        return !url.startsWith("http://") && !url.startsWith("https://")
+                    }
+                }
+
                 val transport = resultMsg?.obj as? WebView.WebViewTransport
                 transport?.webView = popupWebView
                 resultMsg?.sendToTarget()
