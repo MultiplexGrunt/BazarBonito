@@ -143,7 +143,7 @@ function listenToActiveListDeliveries() {
             activeDeliveries = updatedDeliveries;
 
             // Renderizar la vista de entregas si está visible
-            if (currentView === 'entregas') {
+            if (deliveriesView && deliveriesView.style.display === 'flex') {
                 renderDeliveries();
             }
         },
@@ -706,12 +706,6 @@ function updateRoleUI() {
         btnShowDeliveries.style.display = isAdmin ? 'inline-flex' : 'none';
     }
 
-    // 5b. Navegación: solo el admin ve Agregar, Entregas y Herramientas
-    document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
-        const adminOnly = ['agregar', 'entregas', 'herramientas'].includes(btn.dataset.view);
-        btn.style.display = (!isAdmin && adminOnly) ? 'none' : '';
-    });
-
     // 6. Botón de agregar producto
     if (btnToggleForm) {
         btnToggleForm.style.display = isAdmin ? 'inline-flex' : 'none';
@@ -822,6 +816,15 @@ if (btnLogout) {
     btnLogout.addEventListener('click', async () => {
         if (confirm('¿Cerrar sesión de Administrador?')) {
             try {
+                // Si la sesión fue con PIN, simplemente la cerramos en local
+                if (!firebase || !firebaseAuth.currentUser) {
+                    isAdmin = false;
+                    userRoleDecided = true;
+                    updateRoleUI();
+                    renderProducts();
+                    showToast('success', 'Sesión cerrada. Ahora eres visitante.');
+                    return;
+                }
                 await signOut(firebaseAuth);
                 showToast('success', 'Sesión cerrada. Ahora eres visitante.');
             } catch (err) {
@@ -831,12 +834,40 @@ if (btnLogout) {
     });
 }
 
+// ── LOGIN ALTERNATIVO CON PIN (para Android y acceso rápido) ──
+const ADMIN_PIN = '1234';
+
 // Botón de login en header (candado) — abre el overlay de bienvenida
 const btnHeaderLogin = document.getElementById('btn-header-login');
 if (btnHeaderLogin) {
     btnHeaderLogin.addEventListener('click', () => {
         if (!isAdmin && welcomeOverlay) {
             welcomeOverlay.style.display = 'flex';
+        }
+    });
+}
+
+// Formulario de PIN de Admin
+const pinLoginForm = document.getElementById('pin-login-form');
+const inputAdminPin = document.getElementById('input-admin-pin');
+if (pinLoginForm) {
+    pinLoginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const enteredPin = inputAdminPin ? inputAdminPin.value.trim() : '';
+        if (enteredPin === ADMIN_PIN) {
+            isAdmin = true;
+            userRoleDecided = true;
+            if (welcomeOverlay) welcomeOverlay.style.display = 'none';
+            updateRoleUI();
+            renderProducts();
+            showToast('success', '¡Bienvenido Administrador! (PIN)');
+            if (inputAdminPin) inputAdminPin.value = '';
+        } else {
+            showToast('error', 'PIN incorrecto. Inténtalo de nuevo.');
+            if (inputAdminPin) {
+                inputAdminPin.value = '';
+                inputAdminPin.focus();
+            }
         }
     });
 }
@@ -884,68 +915,20 @@ function clearFormImage() {
     miniDropzone.style.display = 'flex';
 }
 
-// ── NAVEGACIÓN POR VISTAS (MENÚ LATERAL / TABS) ────────────────────────
-const VIEW_TITLES = {
-    productos: 'Productos',
-    agregar: 'Agregar producto',
-    cuentas: 'Cuentas de Compradoras',
-    entregas: 'Control de Entregas',
-    herramientas: 'Herramientas',
-};
-let currentView = 'productos';
-
-/** Muestra una vista y marca su botón de navegación como activo */
-function showView(name) {
-    currentView = name;
-    document.querySelectorAll('.app-view').forEach(v => {
-        v.classList.toggle('active', v.dataset.view === name);
-    });
-    document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
-        const active = btn.dataset.view === name;
-        btn.classList.toggle('active', active);
-        if (active) btn.setAttribute('aria-current', 'page');
-        else btn.removeAttribute('aria-current');
-    });
-    const titleEl = document.getElementById('view-title');
-    if (titleEl) titleEl.textContent = VIEW_TITLES[name] || 'Bonito Bazar';
-    window.scrollTo({ top: 0 });
-    updateScrollButton();
-}
-
-/** Abre la vista de Cuentas (antes era un overlay de pantalla completa) */
-function openSummaryView() {
-    renderSummaryView();
-    showView('cuentas');
-    // Asegurar visibilidad de métricas según rol (puede estar abierto antes de que updateRoleUI aplique)
-    const statsGrid = summaryView.querySelector('.summary-stats-grid');
-    if (statsGrid) statsGrid.style.display = isAdmin ? 'grid' : 'none';
-}
-
-/** Vuelve de Cuentas a Productos */
-function closeSummaryView() {
-    clearCopiedIndicators();
-    showView('productos');
-}
-
 /** Abre el panel del formulario */
 function openForm() {
-    showView('agregar');
     formPanel.classList.add('open');
     formPanel.setAttribute('aria-hidden', 'false');
-    if (btnToggleForm) {
-        btnToggleForm.classList.add('open');
-        btnToggleForm.setAttribute('aria-expanded', 'true');
-    }
+    btnToggleForm.classList.add('open');
+    btnToggleForm.setAttribute('aria-expanded', 'true');
 }
 
 /** Cierra y resetea el panel del formulario */
 function closeForm() {
     formPanel.classList.remove('open');
     formPanel.setAttribute('aria-hidden', 'true');
-    if (btnToggleForm) {
-        btnToggleForm.classList.remove('open');
-        btnToggleForm.setAttribute('aria-expanded', 'false');
-    }
+    btnToggleForm.classList.remove('open');
+    btnToggleForm.setAttribute('aria-expanded', 'false');
     addForm.reset();
     clearFormImage();
     resetTallaChips();
@@ -966,12 +949,16 @@ async function handleDroppedFile(file) {
 }
 
 // ── TOGGLE DEL FORMULARIO ─────────────────────────────────────────────────
-// El botón "Agregar producto" del menú lateral/tabs llama a openForm()
-// (ver navegación por vistas dentro de init). Al cancelar se vuelve a Productos.
-btnCancelForm.addEventListener('click', () => {
-    closeForm();
-    showView('productos');
+btnToggleForm.addEventListener('click', () => {
+    if (formPanel.classList.contains('open')) {
+        closeForm();
+    } else {
+        openForm();
+        setTimeout(() => inputName.focus(), 50);
+    }
 });
+
+btnCancelForm.addEventListener('click', closeForm);
 
 // ── CHIPS RÁPIDOS DE TALLA (MÓVIL) ────────────────────────────────────────
 const tallaChips = document.querySelectorAll('.talla-chip');
@@ -1182,7 +1169,6 @@ addForm.addEventListener('submit', e => {
 
     // Resetear y cerrar formulario
     closeForm();
-    showView('productos');
 
     renderProducts();
     updateCount();
@@ -1428,12 +1414,10 @@ function createProductCard(p, i) {
             return;
         }
 
-        // 5. Determinar el input de búsqueda destino según la vista actual
+        // 5. Determinar el input de búsqueda destino según el contexto visual actual
         let targetInput = null;
-        if (currentView === 'cuentas') {
+        if (summaryView && summaryView.style.display === 'flex') {
             targetInput = summarySearchInput;
-        } else if (currentView === 'entregas') {
-            targetInput = deliverySearchInput;
         } else {
             targetInput = searchInput;
         }
@@ -1954,6 +1938,9 @@ function createProductCard(p, i) {
         if (!e.target.closest('.list-selector-container')) {
             closeListDropdown();
         }
+        if (!e.target.closest('.tools-selector-container')) {
+            closeToolsDropdown();
+        }
     });
 
     btnCreateList.addEventListener('click', () => openPromptModal('create'));
@@ -2059,8 +2046,34 @@ function createProductCard(p, i) {
     });
 
     // ── GESTIÓN DE HERRAMIENTAS Y RESPALDOS ─────────────────────────
-    // Las herramientas ahora viven en su propia vista (ver showView);
-    // el antiguo dropdown del engranaje ya no existe.
+    function toggleToolsDropdown() {
+        const isVisible = toolsDropdown.style.display === 'block';
+        if (isVisible) {
+            closeToolsDropdown();
+        } else {
+            openToolsDropdown();
+        }
+    }
+
+    function openToolsDropdown() {
+        toolsDropdown.style.display = 'block';
+        btnToolsSelect.classList.add('open');
+        btnToolsSelect.setAttribute('aria-expanded', 'true');
+        closeListDropdown();
+    }
+
+    function closeToolsDropdown() {
+        toolsDropdown.style.display = 'none';
+        btnToolsSelect.classList.remove('open');
+        btnToolsSelect.setAttribute('aria-expanded', 'false');
+    }
+
+    if (btnToolsSelect) {
+        btnToolsSelect.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleToolsDropdown();
+        });
+    }
 
     // Exportar copia de seguridad (backup JSON)
     async function handleExportBackup() {
@@ -2200,18 +2213,21 @@ function createProductCard(p, i) {
 
     if (btnExportBackup) {
         btnExportBackup.addEventListener('click', async () => {
+            closeToolsDropdown();
             await handleExportBackup();
         });
     }
 
     if (btnImportBackup) {
         btnImportBackup.addEventListener('click', () => {
+            closeToolsDropdown();
             backupFileInput.click();
         });
     }
 
     if (btnOptimizeImages) {
         btnOptimizeImages.addEventListener('click', async () => {
+            closeToolsDropdown();
             await handleMassImageOptimization();
         });
     }
@@ -2270,6 +2286,7 @@ function createProductCard(p, i) {
     // Copiar mensaje de cierre de subasta al portapapeles
     if (btnCopyClosingMsg) {
         btnCopyClosingMsg.addEventListener('click', async () => {
+            closeToolsDropdown();
             try {
                 const now = new Date();
                 const closeTime = new Date(now.getTime() + 10 * 60 * 1000);
@@ -2336,15 +2353,32 @@ function createProductCard(p, i) {
 
 
 
-    // Vista de resumen: cerrar vuelve a Productos (abrir es openSummaryView,
-    // llamada desde la navegación por vistas). Ver showView().
-    btnCloseSummary.addEventListener('click', closeSummaryView);
+    // Vista de resumen: Abrir, cerrar y renderizar
+    btnShowSummary.addEventListener('click', () => {
+        renderSummaryView();
+        summaryView.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        updateScrollButton();
 
-    // Cerrar con Escape (volver a Productos desde Cuentas o Entregas)
+        // Asegurar visibilidad de métricas según rol (puede estar abierto antes de que updateRoleUI aplique)
+        const statsGrid = summaryView.querySelector('.summary-stats-grid');
+        if (statsGrid) statsGrid.style.display = isAdmin ? 'grid' : 'none';
+    });
+
+    btnCloseSummary.addEventListener('click', () => {
+        clearCopiedIndicators();
+        summaryView.style.display = 'none';
+        document.body.style.overflow = '';
+        updateScrollButton();
+    });
+
+    // Cerrar con Escape
     document.addEventListener('keydown', e => {
-        if (e.key === 'Escape' && (currentView === 'cuentas' || currentView === 'entregas')) {
+        if (e.key === 'Escape' && summaryView.style.display === 'flex') {
             clearCopiedIndicators();
-            showView('productos');
+            summaryView.style.display = 'none';
+            document.body.style.overflow = '';
+            updateScrollButton();
         }
     });
 
@@ -2746,12 +2780,20 @@ function createProductCard(p, i) {
     }
 
     // ── SISTEMA DE SCROLL FLOTANTE DINÁMICO ───────────────────────
-    // Todas las vistas fluyen con el scroll de la ventana (antes Cuentas y
-    // Entregas eran overlays con scroll propio).
     function getScrollState() {
-        const current = window.scrollY;
-        const max = document.documentElement.scrollHeight - window.innerHeight;
-        return { current, max, container: window };
+        if (summaryView && summaryView.style.display === 'flex') {
+            const current = summaryView.scrollTop;
+            const max = summaryView.scrollHeight - summaryView.clientHeight;
+            return { current, max, container: summaryView };
+        } else if (deliveriesView && deliveriesView.style.display === 'flex') {
+            const current = deliveriesView.scrollTop;
+            const max = deliveriesView.scrollHeight - deliveriesView.clientHeight;
+            return { current, max, container: deliveriesView };
+        } else {
+            const current = window.scrollY;
+            const max = document.documentElement.scrollHeight - window.innerHeight;
+            return { current, max, container: window };
+        }
     }
 
     function updateScrollButton() {
@@ -2941,7 +2983,9 @@ function createProductCard(p, i) {
         if (sortBySelect) sortBySelect.value = 'name-asc';
 
         renderDeliveries();
-        showView('entregas');
+        deliveriesView.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        updateScrollButton();
         if (window.lucide) lucide.createIcons();
 
         // Cargar el historial en segundo plano para las búsquedas
@@ -2949,9 +2993,11 @@ function createProductCard(p, i) {
     }
 
     function closeDeliveriesView() {
-        showView('productos');
+        deliveriesView.style.display = 'none';
+        document.body.style.overflow = '';
         if (deliverySearchInput) deliverySearchInput.value = '';
         deliverySearchTerm = '';
+        updateScrollButton();
     }
 
     function filterDeliveries() {
@@ -3479,25 +3525,6 @@ function createProductCard(p, i) {
 
         if (window.lucide) lucide.createIcons();
     }
-
-    // ── NAVEGACIÓN POR VISTAS (MENÚ LATERAL / TABS) ──────────────────
-    // Un solo manejador para el menú lateral de escritorio y la barra
-    // inferior de tabs de móvil: ambos usan .nav-item[data-view].
-    document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const view = btn.dataset.view;
-            if (view === 'agregar') {
-                openForm();
-                setTimeout(() => inputName.focus(), 60);
-            } else if (view === 'cuentas') {
-                openSummaryView();
-            } else if (view === 'entregas') {
-                openDeliveriesView();
-            } else {
-                showView(view);
-            }
-        });
-    });
 
     // Eventos del panel de entregas
     if (btnShowDeliveries) {
