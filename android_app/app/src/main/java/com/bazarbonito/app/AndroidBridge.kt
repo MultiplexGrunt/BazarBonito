@@ -73,5 +73,24 @@ class AndroidBridge(private val activity: MainActivity) {
     }
 
     @JavascriptInterface
+    fun openWhatsAppGroup(url: String) {
+        activity.runOnUiThread {
+            try {
+                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                intent.setPackage("com.whatsapp")
+                try {
+                    activity.startActivity(intent)
+                } catch (e: Exception) {
+                    val fallbackIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                    activity.startActivity(fallbackIntent)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(activity, "No se pudo abrir WhatsApp", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    @JavascriptInterface
     fun isAndroidApp(): Boolean = true
 }
