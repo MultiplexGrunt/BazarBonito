@@ -3153,237 +3153,80 @@ kbd.kbd-hint {
     }
 }
 
-/* =============================================================
-   REORGANIZACIÓN — MENÚ LATERAL + VISTAS POR SECCIÓN (v41)
-   El contenido es el mismo; cambia la navegación:
-   escritorio usa barra lateral y móvil usa barra inferior de tabs.
-   ============================================================= */
-
-/* ── SHELL CON BARRA LATERAL ── */
-.app-shell {
-    display: grid;
-    grid-template-columns: 248px minmax(0, 1fr);
-    align-items: start;
+/* ── PIN LOGIN EN PANTALLA DE BIENVENIDA ── */
+.pin-login-section {
+    margin-top: 14px;
+    width: 100%;
 }
 
-.app-sidebar {
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    padding: 18px 16px 18px 0;
-    border-right: 1px solid var(--border);
-}
-
-.app-sidebar .brand { flex-shrink: 0; }
-
-.app-sidebar .list-selector-container { position: relative; }
-.app-sidebar .btn-list-select { width: 100%; }
-.app-sidebar .list-dropdown {
-    position: absolute;
-    top: calc(100% + 6px);
-    left: 0;
-    right: 0;
-    z-index: 200;
-}
-
-.sidebar-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.nav-item {
+.pin-divider {
     display: flex;
     align-items: center;
-    gap: 12px;
-    width: 100%;
-    padding: 11px 12px;
-    border-radius: var(--radius);
-    background: transparent;
-    border: 1px solid transparent;
-    color: var(--text-2);
-    font-family: var(--font);
-    font-size: 0.9rem;
+    text-align: center;
+    margin: 12px 0 10px 0;
+    color: var(--text-3);
+    font-size: 0.76rem;
+    font-weight: 500;
+}
+
+.pin-divider::before,
+.pin-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--border);
+}
+
+.pin-divider span {
+    padding: 0 10px;
+}
+
+.pin-input-wrap {
+    display: flex;
+    gap: 8px;
+}
+
+.pin-input-wrap input {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--bg-input);
+    color: var(--text-1);
+    font-size: 0.95rem;
+    outline: none;
+    transition: var(--t);
+}
+
+.pin-input-wrap input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.btn-pin-submit {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    border-radius: var(--radius-md);
+    background: var(--accent);
+    color: #ffffff;
     font-weight: 600;
-    text-align: left;
+    font-size: 0.88rem;
+    border: none;
     cursor: pointer;
     transition: var(--t);
-    -webkit-tap-highlight-color: transparent;
 }
-.nav-item svg { width: 18px; height: 18px; flex-shrink: 0; }
-.nav-item:hover { background: var(--bg-input); color: var(--text-1); }
-.nav-item.active {
-    background: var(--accent-glow);
-    border-color: rgba(124, 58, 237, 0.25);
-    color: var(--accent-h);
-}
-[data-theme="light"] .nav-item.active { border-color: rgba(236, 72, 153, 0.3); }
 
-.sidebar-footer {
-    margin-top: auto;
-    padding-top: 16px;
-    border-top: 1px solid var(--border);
+.btn-pin-submit:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px var(--accent-glow);
+}
+
+.pin-hint {
+    margin-top: 8px;
     font-size: 0.72rem;
     color: var(--text-3);
     text-align: center;
 }
 
-/* ── COLUMNA DE CONTENIDO ── */
-.app-content {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    padding-left: 24px;
-    min-height: 100vh;
-}
 
-/* ── HEADER DELGADO ── */
-.view-title {
-    font-family: var(--font-display);
-    font-size: 1.25rem;
-    font-weight: 800;
-    color: var(--text-1);
-    margin: 0;
-    flex: 1;
-    min-width: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.brand-mini { display: none; align-items: center; gap: 10px; min-width: 0; }
-.brand-mini .brand-icon { width: 36px; height: 36px; flex-shrink: 0; }
-.brand-mini .brand-icon svg { width: 18px; height: 18px; }
-.brand-mini .brand-name { font-size: 1.05rem; }
-
-/* ── VISTAS ── */
-.app-view { display: none; }
-.app-view.active {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    animation: fade-in 0.25s ease;
-}
-
-.app-view .list-toolbar { order: 0; margin: 0; max-width: none; width: 100%; }
-
-.view-section-head { padding: 4px 0 2px; }
-.view-section-head h2 {
-    font-family: var(--font-display);
-    font-size: 1.25rem;
-    font-weight: 800;
-    color: var(--text-1);
-    margin: 0;
-}
-.view-section-head p { font-size: 0.85rem; color: var(--text-2); margin: 4px 0 0; }
-
-/* El formulario vive ahora dentro de su propia vista: sin borde inferior */
-#view-agregar .form-panel-inner { border-bottom: none; padding-bottom: 4px; }
-
-/* Cuentas y Entregas ya no son overlays de pantalla completa */
-.summary-view-inner { display: block; }
-.app-view .summary-view-container { max-width: 100%; }
-
-/* ── HERRAMIENTAS ── */
-.tools-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 14px;
-}
-.tool-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    backdrop-filter: blur(12px);
-}
-.tool-icon {
-    width: 40px; height: 40px;
-    border-radius: var(--radius);
-    background: var(--accent-glow);
-    color: var(--accent-h);
-    display: flex; align-items: center; justify-content: center;
-}
-.tool-icon svg { width: 20px; height: 20px; }
-.tool-text h3 {
-    font-family: var(--font-display);
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: var(--text-1);
-    margin: 0 0 4px;
-}
-.tool-text p { font-size: 0.82rem; color: var(--text-2); line-height: 1.55; margin: 0; }
-.btn-tool {
-    margin-top: auto;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    background: var(--bg-input);
-    border: 1px solid var(--border);
-    color: var(--text-1);
-    border-radius: var(--radius);
-    padding: 10px 16px;
-    font-family: var(--font);
-    font-size: 0.88rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: var(--t);
-}
-.btn-tool:hover { border-color: var(--accent); color: var(--accent-h); }
-.btn-tool svg { width: 16px; height: 16px; }
-
-/* ── BARRA INFERIOR DE TABS (MÓVIL) ── */
-.mobile-tabbar { display: none; }
-
-/* ── RESPONSIVE ── */
-@media (max-width: 1024px) {
-    .app-shell { display: flex; flex-direction: column; }
-    .app-sidebar { display: none; }
-    .app-content { padding: 0 12px 88px; }
-    .app-header { flex-wrap: nowrap; }
-    .brand-mini { display: flex; flex: 1; }
-    .view-title { display: none; }
-
-    .mobile-tabbar {
-        display: flex;
-        position: fixed;
-        bottom: 0; left: 0; right: 0;
-        z-index: 400;
-        background: var(--bg-panel);
-        border-top: 1px solid var(--border);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
-    }
-    .mobile-tabbar .nav-item {
-        flex: 1;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 3px;
-        padding: 6px 2px;
-        font-size: 0.66rem;
-        font-weight: 600;
-        text-align: center;
-        border-radius: 10px;
-    }
-    .mobile-tabbar .nav-item svg { width: 20px; height: 20px; }
-    .mobile-tabbar .nav-item span {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
-    }
-
-    /* El botón flotante de scroll no debe tapar la barra de tabs */
-    .btn-scroll-toggle { bottom: 84px; right: 16px; }
-    .toast { bottom: 84px; right: 16px; left: 16px; }
-}
