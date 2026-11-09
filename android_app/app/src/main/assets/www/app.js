@@ -46,6 +46,7 @@ const googleProvider = new GoogleAuthProvider();
 // Configuración de Administrador
 const ADMIN_EMAIL = "toledooscar96@gmail.com";
 const WHATSAPP_GROUP_URL = "https://chat.whatsapp.com/CdKKvGdHXSC3aq9FzARj5H?s=cl&p=a&ilr=2";
+const FOTOS_GROUP_URL = "https://chat.whatsapp.com/HjPszDFFyzYEfSDyx9vXlu?s=cl&p=a&iam=2";
 let isAdmin = false;             // Define si el usuario actual es Administrador
 let userRoleDecided = true;      // El rol inicia directamente como visitante por defecto
 
@@ -2631,27 +2632,19 @@ function createProductCard(p, i) {
     }
 
 
-    // ── ABRIR WHATSAPP CON LA COMPRADORA ──────────────────────────────────────
-    // Detecta si el nombre de la compradora es un número de teléfono y, si lo es,
-    // abre WhatsApp directamente en ese chat (app nativa en Android, nueva pestaña en web).
-    function openWhatsAppForBuyer(compName) {
-        if (!compName) return;
-        // Limpiar: quitar espacios, guiones, paréntesis y signo +
-        const cleaned = compName.replace(/[\s\-\(\)\+]/g, '');
-        // Solo continuar si es un número de 10 a 13 dígitos
-        if (!/^\d{10,13}$/.test(cleaned)) return;
+    // ── ABRIR EL GRUPO "FOTOS" DE WHATSAPP ───────────────────────────────────
+    // El enlace de invitación del grupo abre WhatsApp directamente en el grupo
+    // (app nativa en Android, nueva pestaña en web). Los enlaces wa.me no
+    // pueden abrir grupos, por eso se usa el enlace de invitación.
+    function openFotosGroup() {
+        if (!FOTOS_GROUP_URL) return;
 
-        // Agregar lada de México (+52) si el número tiene solo 10 dígitos
-        const phone = cleaned.length === 10 ? `52${cleaned}` : cleaned;
-        const msgText = 'Hola, te mando tu resumen de compras de Bonito Bazar 🛍️';
-        const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(msgText)}`;
-
-        if (window.AndroidBridge && typeof window.AndroidBridge.openWhatsAppChat === 'function') {
+        if (window.AndroidBridge && typeof window.AndroidBridge.openWhatsAppGroup === 'function') {
             // En Android: usar el bridge nativo para abrir WhatsApp directo
-            window.AndroidBridge.openWhatsAppChat(phone, msgText);
+            window.AndroidBridge.openWhatsAppGroup(FOTOS_GROUP_URL);
         } else {
             // En web: abrir en nueva pestaña
-            window.open(waUrl, '_blank');
+            window.open(FOTOS_GROUP_URL, '_blank');
         }
     }
 
@@ -2688,11 +2681,10 @@ function createProductCard(p, i) {
                             [blob.type]: blob
                         })
                     ]);
-                    showToast('success', '¡Imagen del resumen copiada! Lista para enviar (Ctrl+V).');
+                    showToast('success', '¡Imagen copiada! Pégala en el grupo Fotos.');
 
-                    // Abrir chat de WhatsApp si la compradora tiene número de teléfono
-                    const compName = buttonElement.dataset.compName || '';
-                    openWhatsAppForBuyer(compName);
+                    // Abrir el grupo "Fotos" de WhatsApp para pegar la imagen
+                    openFotosGroup();
 
                     // Marcar la tarjeta como copiada e icono de check
                     cardElement.classList.add('copied');
