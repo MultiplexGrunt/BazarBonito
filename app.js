@@ -816,15 +816,6 @@ if (btnLogout) {
     btnLogout.addEventListener('click', async () => {
         if (confirm('¿Cerrar sesión de Administrador?')) {
             try {
-                // Si la sesión fue con PIN, simplemente la cerramos en local
-                if (!firebase || !firebaseAuth.currentUser) {
-                    isAdmin = false;
-                    userRoleDecided = true;
-                    updateRoleUI();
-                    renderProducts();
-                    showToast('success', 'Sesión cerrada. Ahora eres visitante.');
-                    return;
-                }
                 await signOut(firebaseAuth);
                 showToast('success', 'Sesión cerrada. Ahora eres visitante.');
             } catch (err) {
@@ -834,40 +825,12 @@ if (btnLogout) {
     });
 }
 
-// ── LOGIN ALTERNATIVO CON PIN (para Android y acceso rápido) ──
-const ADMIN_PIN = '1234';
-
 // Botón de login en header (candado) — abre el overlay de bienvenida
 const btnHeaderLogin = document.getElementById('btn-header-login');
 if (btnHeaderLogin) {
     btnHeaderLogin.addEventListener('click', () => {
         if (!isAdmin && welcomeOverlay) {
             welcomeOverlay.style.display = 'flex';
-        }
-    });
-}
-
-// Formulario de PIN de Admin
-const pinLoginForm = document.getElementById('pin-login-form');
-const inputAdminPin = document.getElementById('input-admin-pin');
-if (pinLoginForm) {
-    pinLoginForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const enteredPin = inputAdminPin ? inputAdminPin.value.trim() : '';
-        if (enteredPin === ADMIN_PIN) {
-            isAdmin = true;
-            userRoleDecided = true;
-            if (welcomeOverlay) welcomeOverlay.style.display = 'none';
-            updateRoleUI();
-            renderProducts();
-            showToast('success', '¡Bienvenido Administrador! (PIN)');
-            if (inputAdminPin) inputAdminPin.value = '';
-        } else {
-            showToast('error', 'PIN incorrecto. Inténtalo de nuevo.');
-            if (inputAdminPin) {
-                inputAdminPin.value = '';
-                inputAdminPin.focus();
-            }
         }
     });
 }
