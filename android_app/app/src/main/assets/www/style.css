@@ -1726,6 +1726,64 @@ kbd.kbd-hint {
     margin: 2px 0 0;
 }
 
+/* Interruptor: abrir WhatsApp al copiar un total */
+.summary-whatsapp-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+}
+.summary-whatsapp-toggle-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-1);
+    cursor: pointer;
+}
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.switch-slider {
+    position: absolute;
+    inset: 0;
+    background: var(--border);
+    border-radius: 999px;
+    transition: background 0.2s ease;
+}
+.switch-slider::before {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 3px;
+    top: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+}
+.switch input:checked + .switch-slider {
+    background: #25D366;
+}
+.switch input:checked + .switch-slider::before {
+    transform: translateX(20px);
+}
+.switch input:focus-visible + .switch-slider {
+    outline: 2px solid var(--accent-h);
+    outline-offset: 2px;
+}
+
 /* Grid de métricas generales */
 .summary-stats-grid {
     display: grid;
