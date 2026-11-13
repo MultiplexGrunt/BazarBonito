@@ -628,6 +628,31 @@ const btnSortBuyers = document.getElementById('btn-sort-buyers');
 const btnSortModified = document.getElementById('btn-sort-modified');
 const summarySearchInput = document.getElementById('summary-search-input');
 const btnScrollToggle = document.getElementById('btn-scroll-toggle');
+const toggleOpenWhatsApp = document.getElementById('toggle-open-whatsapp');
+
+// ── ABRIR WHATSAPP AL COPIAR UN TOTAL ────────────────────────────────────
+// Interruptor en la vista de resumen: si está apagado, "Copiar total" solo
+// copia la imagen y ya no abre WhatsApp. La preferencia se guarda en el
+// dispositivo y por defecto está activada.
+const OPEN_WHATSAPP_STORAGE_KEY = 'bonitobazar_open_whatsapp_on_copy';
+let openWhatsAppOnCopy = true;
+try {
+    const savedPref = localStorage.getItem(OPEN_WHATSAPP_STORAGE_KEY);
+    openWhatsAppOnCopy = savedPref === null ? true : savedPref === 'true';
+} catch (e) {
+    openWhatsAppOnCopy = true;
+}
+if (toggleOpenWhatsApp) {
+    toggleOpenWhatsApp.checked = openWhatsAppOnCopy;
+    toggleOpenWhatsApp.addEventListener('change', () => {
+        openWhatsAppOnCopy = toggleOpenWhatsApp.checked;
+        try {
+            localStorage.setItem(OPEN_WHATSAPP_STORAGE_KEY, String(openWhatsAppOnCopy));
+        } catch (e) {
+            // Sin almacenamiento: la preferencia solo dura esta sesión
+        }
+    });
+}
 
 // Auth DOM
 const welcomeOverlay = document.getElementById('welcome-overlay');
@@ -2319,6 +2344,7 @@ function createProductCard(p, i) {
 
     // Vista de resumen: Abrir, cerrar y renderizar
     btnShowSummary.addEventListener('click', () => {
+        if (toggleOpenWhatsApp) toggleOpenWhatsApp.checked = openWhatsAppOnCopy;
         renderSummaryView();
         summaryView.style.display = 'flex';
         document.body.style.overflow = 'hidden';
@@ -2681,10 +2707,13 @@ function createProductCard(p, i) {
                             [blob.type]: blob
                         })
                     ]);
-                    showToast('success', '¡Imagen copiada! Pégala en el grupo Fotos.');
-
-                    // Abrir el grupo "Fotos" de WhatsApp para pegar la imagen
-                    openFotosGroup();
+                    if (openWhatsAppOnCopy) {
+                        showToast('success', '¡Imagen copiada! Pégala en el grupo Fotos.');
+                        // Abrir el grupo "Fotos" de WhatsApp para pegar la imagen
+                        openFotosGroup();
+                    } else {
+                        showToast('success', '¡Imagen copiada!');
+                    }
 
                     // Marcar la tarjeta como copiada e icono de check
                     cardElement.classList.add('copied');
